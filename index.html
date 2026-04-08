@@ -516,15 +516,18 @@ function buildElements(view) {
 
 // === LAYOUTS ===
 function getLayout(view) {
-  if (view === 'biznesy' || view === 'zespol') {
+  if (view === 'biznesy') {
     return cy.layout({
       name: 'breadthfirst',
       directed: true,
-      roots: view === 'biznesy' ? '#biz_peg' : '#biz_peg',
-      spacingFactor: 1.2,
+      roots: '#biz_peg',
+      spacingFactor: 0.9,
       animate: false,
-      padding: 40,
+      padding: 50,
     });
+  }
+  if (view === 'zespol') {
+    return cy.layout({ name: 'cose', animate: false, nodeRepulsion: 60000, idealEdgeLength: 100, edgeElasticity: 80, gravity: 0.5, numIter: 2000, padding: 40 });
   }
   return cy.layout({ name: 'cose', animate: false, nodeRepulsion: 80000, idealEdgeLength: 120, edgeElasticity: 100, gravity: 0.3, numIter: 1500, padding: 40 });
 }
