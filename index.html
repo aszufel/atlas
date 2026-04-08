@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas — PEG Ecosystem</title>
+<script src="https://unpkg.com/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e1e4e8; height: 100vh; display: flex; flex-direction: column; }
+
+.topbar { display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: #161b22; border-bottom: 1px solid #30363d; flex-shrink: 0; }
+.logo { font-size: 18px; font-weight: 700; color: #58a6ff; letter-spacing: 1px; }
+.views { display: flex; gap: 4px; }
+.views button { padding: 6px 14px; border: 1px solid #30363d; background: transparent; color: #8b949e; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all .15s; }
+.views button:hover { color: #e1e4e8; border-color: #58a6ff; }
+.views button.active { background: #58a6ff; color: #fff; border-color: #58a6ff; }
+.search-box { margin-left: auto; position: relative; }
+.search-box input { padding: 6px 12px 6px 32px; background: #0d1117; border: 1px solid #30363d; color: #e1e4e8; border-radius: 6px; font-size: 13px; width: 220px; outline: none; }
+.search-box input:focus { border-color: #58a6ff; }
+.search-box::before { content: "\1F50D"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; }
+
+.main { display: flex; flex: 1; overflow: hidden; }
+#cy { flex: 1; }
+
+.sidebar { width: 320px; background: #161b22; border-left: 1px solid #30363d; padding: 20px; overflow-y: auto; flex-shrink: 0; }
+.sidebar h2 { font-size: 16px; margin-bottom: 12px; color: #58a6ff; }
+.sidebar .node-type { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-bottom: 8px; }
+.sidebar .detail { margin-bottom: 8px; }
+.sidebar .detail-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: .5px; }
+.sidebar .detail-value { font-size: 14px; color: #e1e4e8; margin-top: 2px; }
+.sidebar .connections { margin-top: 16px; }
+.sidebar .connections h3 { font-size: 13px; color: #8b949e; margin-bottom: 8px; }
+.sidebar .conn-item { padding: 4px 0; font-size: 13px; color: #c9d1d9; cursor: pointer; }
+.sidebar .conn-item:hover { color: #58a6ff; }
+.sidebar .empty { color: #484f58; font-size: 13px; font-style: italic; }
+
+.legend { display: flex; gap: 12px; padding: 8px 20px; background: #161b22; border-top: 1px solid #30363d; flex-wrap: wrap; flex-shrink: 0; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8b949e; cursor: pointer; transition: opacity .15s; user-select: none; }
+.legend-item:hover { color: #e1e4e8; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+.stats { font-size: 12px; color: #484f58; padding: 8px 20px; background: #161b22; border-top: 1px solid #30363d; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">ATLAS</div>
+  <div class="views">
+    <button class="active" data-view="cortex">Cortex</button>
+    <button data-view="biznesy">Biznesy</button>
+    <button data-view="zespol">Zesp&oacute;l</button>
+  </div>
+  <div class="search-box">
+    <input type="text" id="search" placeholder="Szukaj... ( / )">
+  </div>
+</div>
+
+<div class="main">
+  <div id="cy"></div>
+  <div class="sidebar" id="sidebar">
+    <p class="empty">Kliknij node aby zobaczyc szczegoly</p>
+  </div>
+</div>
+
+<div class="legend" id="legend"></div>
+<div class="stats" id="stats"></div>
+
+<script>
+const TYPES = {
+  script:   { label: 'Skrypt',     color: '#3fb950', shape: 'round-rectangle' },
+  api:      { label: 'API',        color: '#58a6ff', shape: 'diamond' },
+  timer:    { label: 'Timer',      color: '#d29922', shape: 'triangle' },
+  cron:     { label: 'Cron PHP',   color: '#db6d28', shape: 'triangle' },
+  mcp:      { label: 'MCP',        color: '#bc8cff', shape: 'hexagon' },
+  app:      { label: 'Aplikacja',  color: '#f778ba', shape: 'round-rectangle' },
+  repo:     { label: 'Repo',       color: '#8b949e', shape: 'barrel' },
+  core:     { label: 'Core file',  color: '#e3b341', shape: 'round-rectangle' },
+  hosting:  { label: 'Hosting',    color: '#56d364', shape: 'round-rectangle' },
+  holding:  { label: 'Holding',    color: '#f0e68c', shape: 'round-rectangle' },
+  spolka:   { label: 'Spolka',     color: '#ff7b72', shape: 'round-rectangle' },
+  punkt:    { label: 'Punkt',      color: '#ffa657', shape: 'round-rectangle' },
+  strategia:{ label: 'Strategia',  color: '#7ee787', shape: 'diamond' },
+  pracownik:{ label: 'Pracownik',  color: '#79c0ff', shape: 'ellipse' },
+};
+
+// v = views this node belongs to
+const nodes = [
+  // ========== CORTEX VIEW ==========
+  // Core files
+  { id: 'claude_md',         label: 'CLAUDE.md',             type: 'core',   v: ['cortex'], desc: 'Glowne instrukcje Cortexu — tryby, formaty, trigger phrases, harmonogram briefingow' },
+  { id: 'context_md',        label: 'context.md',            type: 'core',   v: ['cortex'], desc: 'Kontekst dnia — generowany o 07:00. Kalendarz (PEG+prywatny+rodzinny), zadania, CRM, habits, inbox (2 konta)' },
+  { id: 'env_file',          label: '.env',                  type: 'core',   v: ['cortex'], desc: 'Tokeny i klucze API — Notion (2x), Gmail, Cloudflare, OpenAI, Google Ads, Fireflies' },
+  { id: 'knowledge_dir',     label: 'knowledge/',            type: 'core',   v: ['cortex'], desc: 'Baza wiedzy: agents/, maps/, www/, apps/' },
+  { id: 'quotes_mazur',      label: 'quotes_mazur.md',       type: 'core',   v: ['cortex'], desc: 'Cytaty Mazura — konfrontacja, mobilizacja, kotwica' },
+  { id: 'adi_psychology',    label: 'adi_psychology.md',      type: 'core',   v: ['cortex'], desc: 'Profil psychologiczny — reset, triage, strategia' },
+  { id: 'notion_map',        label: 'notion_map.md',         type: 'core',   v: ['cortex'], desc: 'Mapa 32 baz Notion — ID, relacje, statusy' },
+  { id: 'ecosystem_map',     label: 'ecosystem_map.md',      type: 'core',   v: ['cortex'], desc: 'Pelna mapa ekosystemu PEG' },
+  { id: 'apps_map',          label: 'apps_map.md',           type: 'core',   v: ['cortex'], desc: 'Mapa aplikacji ~/APP' },
+  { id: 'venv',              label: 'scripts/venv/',         type: 'core',   v: ['cortex'], desc: 'Python virtualenv' },
+
+  // Scripts
+  { id: 'gmail_py',          label: 'gmail.py',              type: 'script', v: ['cortex'], desc: 'list, read, send, draft, search [--private]' },
+  { id: 'calendar_py',       label: 'google_calendar.py',    type: 'script', v: ['cortex'], desc: 'list, add, delete, rsvp, calendars [--private]' },
+  { id: 'notion_py',         label: 'notion.py',             type: 'script', v: ['cortex'], desc: 'query, search, add-task, add-note, add-activity' },
+  { id: 'notion2email_py',   label: 'notion_to_email.py',    type: 'script', v: ['cortex'], desc: 'Notion page -> HTML email' },
+  { id: 'cloudflare_py',     label: 'cloudflare.py',         type: 'script', v: ['cortex'], desc: 'overview, detail, cache, purge' },
+  { id: 'seo_report_py',     label: 'seo_report.py',         type: 'script', v: ['cortex'], desc: 'raport SEO -> Notion' },
+  { id: 'health_check_py',   label: 'health_check.py',       type: 'script', v: ['cortex'], desc: 'smoke test integracji' },
+  { id: 'fireflies_py',      label: 'fireflies_to_notion.py',type: 'script', v: ['cortex'], desc: 'transkrypcje -> Notion' },
+  { id: 'google_ads_py',     label: 'google_ads.py',         type: 'script', v: ['cortex'], desc: '19 komend: kampanie, KP, forecast' },
+  { id: 'ga4_py',            label: 'ga4.py',                type: 'script', v: ['cortex'], desc: 'dane GA4' },
+  { id: 'search_console_py', label: 'search_console.py',     type: 'script', v: ['cortex'], desc: 'pozycje, kliki GSC' },
+  { id: 'deploy_ftp_sh',     label: 'deploy_ftp.sh',         type: 'script', v: ['cortex'], desc: 'deploy FTP stron' },
+  { id: 'update_context_py', label: 'update_context.py',     type: 'script', v: ['cortex'], desc: 'generuje context.md' },
+  { id: 'smoke_test_py',     label: 'smoke_test.py',         type: 'script', v: ['cortex'], desc: 'test Notion + Gmail' },
+  { id: 'backup_py',         label: 'google_drive_backup.py',type: 'script', v: ['cortex'], desc: 'backup na Google Drive' },
+  { id: 'google_admin_py',  label: 'google_admin.py',       type: 'script', v: ['cortex'], desc: 'users, groups, aliases, security, report — Google Workspace' },
+  { id: 'indexing_py',      label: 'indexing.py',           type: 'script', v: ['cortex'], desc: 'submit, inspect, sitemap — Google Indexing API' },
+  { id: 'check_treningi_py',label: 'check_treningi.py',     type: 'script', v: ['cortex'], desc: 'podsumowanie treningow z Notion' },
+  { id: 'notion_replace_py',label: 'notion_replace_page.py',type: 'script', v: ['cortex'], desc: 'kasuje i odtwarza strone Notion (masowa edycja)' },
+  { id: 'update_supl_py',   label: 'update_suplementy.py',  type: 'script', v: ['cortex'], desc: 'aktualizacja bazy suplementow' },
+
+  // Timers
+  { id: 'timer_context',   label: 'cortex-context (07:00)',type: 'timer', v: ['cortex'], desc: 'systemd -> update_context.py' },
+  { id: 'timer_smoke',     label: 'cortex-smoke (07:10)',  type: 'timer', v: ['cortex'], desc: 'systemd -> smoke_test.py' },
+  { id: 'timer_seo',       label: 'cortex-seo (pon 07:15)',type: 'timer', v: ['cortex'], desc: 'systemd -> seo_report.py' },
+  { id: 'timer_backup',    label: 'cortex-backup (23:30)', type: 'timer', v: ['cortex'], desc: 'systemd -> backup.py' },
+
+  // Crons
+  { id: 'cron_scan',       label: 'pm-auto-scan (23:00)',  type: 'cron', v: ['cortex'], desc: 'PHP: Apify auto-scan' },
+  { id: 'cron_summary',    label: 'pm-summary (01:00)',    type: 'cron', v: ['cortex'], desc: 'PHP: OpenAI summary' },
+  { id: 'cron_retry',      label: 'pm-retry (06:00)',      type: 'cron', v: ['cortex'], desc: 'PHP: retry Apify' },
+
+  // APIs
+  { id: 'gmail_api',       label: 'Gmail API',             type: 'api', v: ['cortex'], desc: 'OAuth, email ops' },
+  { id: 'calendar_api',    label: 'Google Calendar API',   type: 'api', v: ['cortex'], desc: 'OAuth, events' },
+  { id: 'notion_api_firm', label: 'Notion API (firmowe)',   type: 'api', v: ['cortex'], desc: 'NOTION_TOKEN_FIRMOWE, 20 baz' },
+  { id: 'notion_api_priv', label: 'Notion API (prywatne)', type: 'api', v: ['cortex'], desc: 'NOTION_TOKEN_PRYWATNE, 12 baz' },
+  { id: 'cloudflare_api',  label: 'Cloudflare API',        type: 'api', v: ['cortex'], desc: 'cache, purge, analytics' },
+  { id: 'openai_api',      label: 'OpenAI API',            type: 'api', v: ['cortex'], desc: 'GPT-4o, Whisper' },
+  { id: 'fireflies_api',   label: 'Fireflies API',         type: 'api', v: ['cortex'], desc: 'transkrypcje spotkan' },
+  { id: 'google_ads_api',  label: 'Google Ads API',        type: 'api', v: ['cortex'], desc: 'Basic Access, MCC' },
+  { id: 'ga4_api',         label: 'GA4 API',               type: 'api', v: ['cortex'], desc: 'analytics 4' },
+  { id: 'gsc_api',         label: 'Search Console API',    type: 'api', v: ['cortex'], desc: 'pozycje, kliki' },
+  { id: 'psi_api',         label: 'PageSpeed Insights',    type: 'api', v: ['cortex'], desc: 'GOOGLE_API_KEY' },
+  { id: 'gdrive_api',      label: 'Google Drive API',      type: 'api', v: ['cortex'], desc: 'OAuth, backup' },
+  { id: 'dhosting_ftp',    label: 'dhosting FTP',          type: 'api', v: ['cortex'], desc: 'FTP deploy' },
+  { id: 'supabase',        label: 'Supabase',              type: 'api', v: ['cortex'], desc: 'DB: PM, ZakupEX' },
+  { id: 'apify',           label: 'Apify',                 type: 'api', v: ['cortex'], desc: 'scraping cen, Otodom' },
+  { id: 'google_admin_api',label: 'Google Admin SDK',      type: 'api', v: ['cortex'], desc: 'users, groups, aliases — Workspace PEG' },
+  { id: 'indexing_api',    label: 'Google Indexing API',   type: 'api', v: ['cortex'], desc: 'submit URLi do Google' },
+  { id: 'mikrus_pg',       label: 'PostgreSQL (Mikrus)',   type: 'api', v: ['cortex'], desc: 'DB Janusz: messages_log, timecard_entries' },
+
+  // MCP
+  { id: 'mcp_chrome',      label: 'claude-in-chrome',      type: 'mcp', v: ['cortex'], desc: 'automatyzacja Chrome' },
+  { id: 'mcp_canva',       label: 'Canva MCP',             type: 'mcp', v: ['cortex'], desc: 'tworzenie designow' },
+  { id: 'mcp_notion_ai',   label: 'Notion (claude.ai)',    type: 'mcp', v: ['cortex'], desc: 'Notion z Claude.ai' },
+  { id: 'mcp_notion_firm', label: 'notion-firmowe MCP',    type: 'mcp', v: ['cortex'], desc: 'API bazy firmowe' },
+  { id: 'mcp_notion_priv', label: 'notion-prywatne MCP',   type: 'mcp', v: ['cortex'], desc: 'API bazy prywatne' },
+  { id: 'mcp_fireflies',   label: 'Fireflies MCP',         type: 'mcp', v: ['cortex'], desc: 'transkrypcje' },
+  { id: 'mcp_gmail',       label: 'Gmail MCP',             type: 'mcp', v: ['cortex'], desc: 'Gmail z Claude.ai' },
+  { id: 'mcp_calendar',    label: 'Calendar MCP',          type: 'mcp', v: ['cortex'], desc: 'kalendarz z Claude.ai' },
+  { id: 'mcp_ahrefs',      label: 'Ahrefs MCP',            type: 'mcp', v: ['cortex'], desc: 'SEO / backlinki' },
+
+  // Apps
+  { id: 'app_pm',          label: 'PM',                    type: 'app', v: ['cortex'], desc: 'Pricing Manager — Next.js 16, Supabase, Apify — price.partnerexpert.work' },
+  { id: 'app_zakupex',     label: 'ZakupEX',               type: 'app', v: ['cortex'], desc: 'System faktur — Next.js 16, Supabase, OCR GPT-4o — zakupex.vercel.app' },
+  { id: 'app_janusz',      label: 'Janusz',                type: 'app', v: ['cortex'], desc: 'WhatsApp bot PEG — Node.js, Supabase, whatsapp-web.js — Mikrus VPS' },
+  { id: 'app_gustaw',      label: 'Gustaw',                type: 'app', v: ['cortex'], desc: 'Gmail add-on (Apps Script) — AI kategoryzacja, delegacja, Notion sync' },
+  { id: 'app_bot_voice',   label: 'BOT Voice',             type: 'app', v: ['cortex'], desc: 'Voice -> Notion — Next.js 14, Whisper, Vercel' },
+  { id: 'app_atlas',       label: 'Atlas',                 type: 'app', v: ['cortex'], desc: 'Interaktywna mapa ekosystemu PEG (Cytoscape.js)' },
+  { id: 'app_muszla',      label: 'muszla.pl',             type: 'app', v: ['cortex'], desc: 'muszlakolobrzeg.pl — Astro 5, React 19, Tailwind 4, Vercel' },
+  { id: 'app_sac',         label: 'SAC',                   type: 'app', v: ['cortex'], desc: 'System Automatycznej Ceny — ~/APP/SAC' },
+  { id: 'app_otoceny',     label: 'otoceny',               type: 'app', v: ['cortex'], desc: 'Scraping cen konkurencji — ~/APP/otoceny' },
+
+  // Repos
+  { id: 'repo_cortex',     label: 'Cortex.git',            type: 'repo', v: ['cortex'], desc: 'System operacyjny AI — ~/Cortex' },
+  { id: 'repo_pm',         label: 'PM.git',                type: 'repo', v: ['cortex'], desc: 'Next.js, Supabase' },
+  { id: 'repo_zakupex',    label: 'Zakupex.git',           type: 'repo', v: ['cortex'], desc: 'Next.js, Supabase' },
+  { id: 'repo_janusz',     label: 'Janusz.git',            type: 'repo', v: ['cortex'], desc: 'Node.js, Supabase' },
+  { id: 'repo_gustaw',     label: 'gustaw.git',            type: 'repo', v: ['cortex'], desc: 'Apps Script' },
+  { id: 'repo_sac',        label: 'SAC.git',               type: 'repo', v: ['cortex'], desc: 'Python' },
+  // gmail-ai.git i oto.git — usunięte lokalnie 2026-04-04, kod na GitHub
+  { id: 'repo_muszla',     label: 'muszla.pl.git',         type: 'repo', v: ['cortex'], desc: 'Astro' },
+  { id: 'repo_voice',      label: 'voice-notion-app.git',  type: 'repo', v: ['cortex'], desc: 'Node.js' },
+
+  // Hosting
+  { id: 'vercel',          label: 'Vercel',                type: 'hosting', v: ['cortex'], desc: 'PM, ZakupEX, BOT Voice, muszla.pl' },
+  { id: 'dhosting',        label: 'dhosting',              type: 'hosting', v: ['cortex'], desc: 'FTP: IND.U, Sunday, PEG, GEA + crony PHP (PM)' },
+  { id: 'mikrus',          label: 'Mikrus VPS',            type: 'hosting', v: ['cortex'], desc: 'leszek140, 1GB/10GB, 75PLN/rok — Janusz + PostgreSQL' },
+  { id: 'laptop',          label: 'Laptop (penguin)',       type: 'hosting', v: ['cortex'], desc: 'systemd timers, Cortex runtime — NIGDY crony produkcyjne' },
+
+  // ========== BIZNESY VIEW ==========
+  // Holding
+  { id: 'biz_peg',     label: 'PEG',                type: 'holding',   v: ['biznesy','zespol'], desc: 'Partner Expert GROUP — holding' },
+  // Spolki
+  { id: 'biz_pei',     label: 'PEI',                type: 'spolka',    v: ['biznesy','zespol'], desc: 'Partner Expert Investments — inwestycje, consulting' },
+  { id: 'biz_peo',     label: 'PEO',                type: 'spolka',    v: ['biznesy','zespol'], desc: 'Partner Expert Operator — zarzadzanie hotelami/apartamentami' },
+  { id: 'biz_per',     label: 'PER',                type: 'spolka',    v: ['biznesy','zespol'], desc: 'Partner Expert Restaurants — gastronomia, restrukturyzacja w toku' },
+  // Punkty
+  { id: 'biz_indu',    label: 'IND.U',              type: 'punkt',     v: ['biznesy','zespol'], desc: 'Apartamenty — induapartamenty.pl' },
+  { id: 'biz_sunday',  label: 'Sunday',             type: 'punkt',     v: ['biznesy','zespol'], desc: 'Sunday Resort — sundayresort.online' },
+  { id: 'biz_gea',     label: 'GEA Sea & Resort',   type: 'punkt',     v: ['biznesy','zespol'], desc: 'W przygotowaniu' },
+  { id: 'biz_spot',    label: 'Lobby Bar / Spot',   type: 'punkt',     v: ['biznesy','zespol'], desc: 'IND.U Spot / Lobby Bar' },
+  { id: 'biz_muszla',  label: 'Muszla',             type: 'punkt',     v: ['biznesy','zespol'], desc: 'Muszla Koncertowa — muszlakolobrzeg.pl, dzierzawa od miasta' },
+  { id: 'biz_beachbox',label: 'Beach Box',          type: 'punkt',     v: ['biznesy','zespol'], desc: 'Beach Box — gastronomia plazowa' },
+  { id: 'biz_sunset',  label: 'Sunset',             type: 'punkt',     v: ['biznesy','zespol'], desc: 'Sunset Bar' },
+  // Strategia aktywna
+  { id: 'str_noraco',  label: 'Noraco',             type: 'strategia', v: ['biznesy'], desc: 'W trakcie' },
+  { id: 'str_leba',    label: 'Leba',               type: 'strategia', v: ['biznesy'], desc: 'Umowa podpisana' },
+  { id: 'str_rogowo',  label: 'Rogowo 60',          type: 'strategia', v: ['biznesy'], desc: 'Umowa podpisana' },
+  { id: 'str_wildpearl',label:'Wild Pearl',          type: 'strategia', v: ['biznesy'], desc: 'Umowa podpisana' },
+  { id: 'str_area',    label: 'Area na Plazowej',   type: 'strategia', v: ['biznesy'], desc: 'W trakcie' },
+  { id: 'str_grzybowo',label: 'Dzialka Grzybowo',   type: 'strategia', v: ['biznesy'], desc: 'W trakcie' },
+  { id: 'str_biedronka',label:'Dzialka Biedronka',   type: 'strategia', v: ['biznesy'], desc: 'W trakcie' },
+  { id: 'str_foodhall',label: 'Food Hall w Porcie', type: 'strategia', v: ['biznesy'], desc: 'Pauza' },
+  { id: 'str_celka',   label: 'CELKA 500 APT',      type: 'strategia', v: ['biznesy'], desc: 'Pauza' },
+  { id: 'str_p50',     label: 'P50',                type: 'strategia', v: ['biznesy'], desc: 'Pauza' },
+
+  // ========== ZESPOL VIEW (pracownicy aktywni) ==========
+  { id: 'p_adi',        label: 'Adrian Szufel',          type: 'pracownik', v: ['zespol'], desc: 'CEO, zalozyciel PEG' },
+  { id: 'p_oliver',     label: 'Oliver Andrzejczuk',     type: 'pracownik', v: ['zespol'], desc: 'VP Operations, CO Owner' },
+  { id: 'p_kamila',     label: 'Kamila Szczutkowska',    type: 'pracownik', v: ['zespol'], desc: 'Finanse / ksiegowosc' },
+  { id: 'p_paula',      label: 'Paula Rzyzewska-Korzen', type: 'pracownik', v: ['zespol'], desc: 'Administracja / sekretariat' },
+  { id: 'p_maja',        label: 'Maja Limanska',          type: 'pracownik', v: ['zespol'], desc: 'Project Manager' },
+  { id: 'p_patrycja',   label: 'Patrycja Furmankiewicz', type: 'pracownik', v: ['zespol'], desc: 'Dyrektor Operacyjny PEO' },
+  { id: 'p_ula',        label: 'Urszula Kokoszczyk',     type: 'pracownik', v: ['zespol'], desc: 'Dyrektor Muszla Koncertowa' },
+  { id: 'p_mateusz_k',  label: 'Mateusz Kasprzak',       type: 'pracownik', v: ['zespol'], desc: 'PEO' },
+  { id: 'p_dorota_k',   label: 'Dorota Kornas',          type: 'pracownik', v: ['zespol'], desc: 'PEO' },
+  { id: 'p_beata',      label: 'Beata Kasprzak',         type: 'pracownik', v: ['zespol'], desc: 'PEO' },
+  { id: 'p_daria',      label: 'Daria Cieslak',          type: 'pracownik', v: ['zespol'], desc: 'PEO — Spot' },
+  { id: 'p_katarzyna',  label: 'Katarzyna Matyjaszczyk', type: 'pracownik', v: ['zespol'], desc: 'PEO — Spot' },
+  { id: 'p_bartosz_p',  label: 'Bartosz Pietrasiak',     type: 'pracownik', v: ['zespol'], desc: 'B2B, elektryk' },
+  { id: 'p_tomasz',     label: 'Tomasz Ciecwierski',     type: 'pracownik', v: ['zespol'], desc: 'PER' },
+  { id: 'p_dorota_b',   label: 'Buchuta Dorota',         type: 'pracownik', v: ['zespol'], desc: 'PER — Sunset' },
+  { id: 'p_tetiana',    label: 'Tetiana Poklad',         type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
+  { id: 'p_bogdan',     label: 'Bogdan Belej',           type: 'pracownik', v: ['zespol'], desc: 'PER' },
+  { id: 'p_irmina',     label: 'Irmina Andrzejczuk',     type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
+  { id: 'p_krzysztof_s',label: 'Krzysztof Seralis',      type: 'pracownik', v: ['zespol'], desc: 'PER — Muszla' },
+  { id: 'p_julia',      label: 'Julia Malecka',          type: 'pracownik', v: ['zespol'], desc: 'PER — Muszla' },
+  { id: 'p_kamil_k',    label: 'Kamil Kaleta',           type: 'pracownik', v: ['zespol'], desc: 'PER — Muszla' },
+  { id: 'p_patrycja_k', label: 'Patrycja Kozbial',       type: 'pracownik', v: ['zespol'], desc: 'PER — Muszla' },
+  { id: 'p_anastasiia', label: 'Anastasiia Makedonska',  type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
+  { id: 'p_vasyl',      label: 'Vasyl Kharskyy',         type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
+  { id: 'p_oliwia',     label: 'Oliwia Wojcik',          type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
+  { id: 'p_iryna_s',    label: 'Iryna Shestakowa',       type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
+  { id: 'p_tadeusz',    label: 'Tadeusz Zaborowski',     type: 'pracownik', v: ['zespol'], desc: 'PER' },
+  { id: 'p_krystian',   label: 'Krystian Gaik',          type: 'pracownik', v: ['zespol'], desc: 'B2B, zewnetrzny' },
+  { id: 'p_viktoria',   label: 'Viktoria Kulchytska',    type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
+  { id: 'p_inna',       label: 'Inna Kvasnikowa',        type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
+];
+
+const edges = [
+  // ========== CORTEX EDGES ==========
+  { source: 'update_context_py', target: 'context_md',      label: 'generates', v: ['cortex'] },
+  { source: 'env_file',          target: 'gmail_py',        label: 'tokens',    v: ['cortex'] },
+  { source: 'env_file',          target: 'notion_py',       label: 'tokens',    v: ['cortex'] },
+  { source: 'env_file',          target: 'cloudflare_py',   label: 'tokens',    v: ['cortex'] },
+  { source: 'env_file',          target: 'fireflies_py',    label: 'tokens',    v: ['cortex'] },
+  { source: 'env_file',          target: 'google_ads_py',   label: 'tokens',    v: ['cortex'] },
+  { source: 'env_file',          target: 'backup_py',       label: 'tokens',    v: ['cortex'] },
+  { source: 'knowledge_dir',     target: 'notion_map',      label: 'contains',  v: ['cortex'] },
+  { source: 'knowledge_dir',     target: 'ecosystem_map',   label: 'contains',  v: ['cortex'] },
+  { source: 'knowledge_dir',     target: 'apps_map',        label: 'contains',  v: ['cortex'] },
+  { source: 'knowledge_dir',     target: 'quotes_mazur',    label: 'contains',  v: ['cortex'] },
+  { source: 'knowledge_dir',     target: 'adi_psychology',  label: 'contains',  v: ['cortex'] },
+  { source: 'repo_cortex', target: 'gmail_py',           label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'notion_py',          label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'calendar_py',        label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'cloudflare_py',      label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'seo_report_py',      label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'health_check_py',    label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'fireflies_py',       label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'google_ads_py',      label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'ga4_py',             label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'search_console_py',  label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'deploy_ftp_sh',      label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'update_context_py',  label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'smoke_test_py',      label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'backup_py',          label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'notion2email_py',    label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'claude_md',          label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'context_md',         label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'env_file',           label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'knowledge_dir',      label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'venv',               label: 'contains', v: ['cortex'] },
+  { source: 'mcp_chrome',     target: 'laptop',          label: 'browser',  v: ['cortex'] },
+  { source: 'mcp_canva',      target: 'app_muszla',      label: 'design',   v: ['cortex'] },
+  { source: 'mcp_notion_ai',  target: 'notion_api_firm', label: 'proxies',  v: ['cortex'] },
+  { source: 'mcp_notion_ai',  target: 'notion_api_priv', label: 'proxies',  v: ['cortex'] },
+  { source: 'mcp_ahrefs',     target: 'seo_report_py',   label: 'SEO',      v: ['cortex'] },
+  { source: 'gmail_py',          target: 'gmail_api',       label: 'OAuth',       v: ['cortex'] },
+  { source: 'calendar_py',       target: 'calendar_api',    label: 'OAuth',       v: ['cortex'] },
+  { source: 'notion_py',         target: 'notion_api_firm', label: 'token',       v: ['cortex'] },
+  { source: 'notion_py',         target: 'notion_api_priv', label: 'token',       v: ['cortex'] },
+  { source: 'notion2email_py',   target: 'notion_api_firm', label: 'read',        v: ['cortex'] },
+  { source: 'notion2email_py',   target: 'gmail_api',       label: 'draft/send',  v: ['cortex'] },
+  { source: 'cloudflare_py',     target: 'cloudflare_api',  label: 'token',       v: ['cortex'] },
+  { source: 'seo_report_py',     target: 'cloudflare_api',  label: 'analytics',   v: ['cortex'] },
+  { source: 'seo_report_py',     target: 'psi_api',         label: 'scores',      v: ['cortex'] },
+  { source: 'seo_report_py',     target: 'notion_api_firm', label: 'write',       v: ['cortex'] },
+  { source: 'health_check_py',   target: 'notion_api_firm', label: 'smoke',       v: ['cortex'] },
+  { source: 'health_check_py',   target: 'gmail_api',       label: 'smoke',       v: ['cortex'] },
+  { source: 'fireflies_py',      target: 'fireflies_api',   label: 'transcripts', v: ['cortex'] },
+  { source: 'fireflies_py',      target: 'openai_api',      label: 'summarize',   v: ['cortex'] },
+  { source: 'fireflies_py',      target: 'notion_api_firm', label: 'write',       v: ['cortex'] },
+  { source: 'google_ads_py',     target: 'google_ads_api',  label: 'campaigns',   v: ['cortex'] },
+  { source: 'ga4_py',            target: 'ga4_api',         label: 'analytics',   v: ['cortex'] },
+  { source: 'search_console_py', target: 'gsc_api',         label: 'positions',   v: ['cortex'] },
+  { source: 'deploy_ftp_sh',     target: 'dhosting_ftp',    label: 'FTP push',    v: ['cortex'] },
+  { source: 'update_context_py', target: 'notion_api_firm', label: 'read',        v: ['cortex'] },
+  { source: 'update_context_py', target: 'notion_api_priv', label: 'read',        v: ['cortex'] },
+  { source: 'update_context_py', target: 'gmail_api',       label: 'inbox',       v: ['cortex'] },
+  { source: 'update_context_py', target: 'calendar_api',    label: 'events',      v: ['cortex'] },
+  { source: 'smoke_test_py',     target: 'notion_api_firm', label: 'test',        v: ['cortex'] },
+  { source: 'smoke_test_py',     target: 'gmail_api',       label: 'test',        v: ['cortex'] },
+  { source: 'backup_py',         target: 'gdrive_api',      label: 'upload',      v: ['cortex'] },
+  { source: 'google_admin_py',  target: 'google_admin_api',label: 'SDK',         v: ['cortex'] },
+  { source: 'indexing_py',      target: 'indexing_api',    label: 'submit',      v: ['cortex'] },
+  { source: 'repo_cortex', target: 'google_admin_py',  label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'indexing_py',      label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'check_treningi_py',label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'notion_replace_py',label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'update_supl_py',   label: 'contains', v: ['cortex'] },
+  { source: 'env_file',    target: 'google_admin_py',  label: 'tokens',   v: ['cortex'] },
+  { source: 'app_janusz',  target: 'mikrus',           label: 'deploy',   v: ['cortex'] },
+  { source: 'repo_gustaw', target: 'app_gustaw',       label: 'builds',   v: ['cortex'] },
+  { source: 'repo_sac',    target: 'app_sac',          label: 'builds',   v: ['cortex'] },
+  { source: 'app_bot_voice', target: 'vercel',         label: 'deploy',   v: ['cortex'] },
+  { source: 'timer_context', target: 'update_context_py', label: 'triggers', v: ['cortex'] },
+  { source: 'timer_smoke',   target: 'smoke_test_py',     label: 'triggers', v: ['cortex'] },
+  { source: 'timer_seo',     target: 'seo_report_py',     label: 'triggers', v: ['cortex'] },
+  { source: 'timer_backup',  target: 'backup_py',         label: 'triggers', v: ['cortex'] },
+  { source: 'cron_scan',    target: 'apify',      label: 'scraping',   v: ['cortex'] },
+  { source: 'cron_scan',    target: 'supabase',   label: 'write',      v: ['cortex'] },
+  { source: 'cron_summary', target: 'openai_api', label: 'GPT',        v: ['cortex'] },
+  { source: 'cron_summary', target: 'supabase',   label: 'read/write', v: ['cortex'] },
+  { source: 'cron_retry',   target: 'apify',      label: 'retry',      v: ['cortex'] },
+  { source: 'mcp_notion_firm', target: 'notion_api_firm', label: 'proxies', v: ['cortex'] },
+  { source: 'mcp_notion_priv', target: 'notion_api_priv', label: 'proxies', v: ['cortex'] },
+  { source: 'mcp_gmail',       target: 'gmail_api',       label: 'proxies', v: ['cortex'] },
+  { source: 'mcp_calendar',    target: 'calendar_api',    label: 'proxies', v: ['cortex'] },
+  { source: 'mcp_fireflies',   target: 'fireflies_api',   label: 'proxies', v: ['cortex'] },
+  { source: 'app_pm',       target: 'supabase',    label: 'DB cen',     v: ['cortex'] },
+  { source: 'app_pm',       target: 'openai_api',  label: 'summaries',  v: ['cortex'] },
+  { source: 'app_pm',       target: 'apify',       label: 'scraping',   v: ['cortex'] },
+  { source: 'app_zakupex',  target: 'supabase',    label: 'DB faktur',  v: ['cortex'] },
+  { source: 'app_janusz',   target: 'mikrus_pg',   label: 'messages+timecard', v: ['cortex'] },
+  { source: 'app_janusz',   target: 'notion_api_firm', label: 'Wiki',   v: ['cortex'] },
+  { source: 'app_janusz',   target: 'openai_api',  label: 'GPT',        v: ['cortex'] },
+  { source: 'app_bot_voice', target: 'notion_api_firm', label: 'zapis', v: ['cortex'] },
+  { source: 'app_bot_voice', target: 'openai_api', label: 'Whisper',    v: ['cortex'] },
+  { source: 'app_gustaw',   target: 'openai_api',  label: 'GPT/Gemini', v: ['cortex'] },
+  { source: 'app_gustaw',   target: 'notion_api_firm', label: 'sync',  v: ['cortex'] },
+  { source: 'repo_pm',       target: 'app_pm',       label: 'builds', v: ['cortex'] },
+  { source: 'repo_zakupex',  target: 'app_zakupex',  label: 'builds', v: ['cortex'] },
+  { source: 'repo_janusz',   target: 'app_janusz',   label: 'builds', v: ['cortex'] },
+  { source: 'repo_muszla',   target: 'app_muszla',   label: 'builds', v: ['cortex'] },
+  { source: 'repo_voice',    target: 'app_bot_voice', label: 'builds',v: ['cortex'] },
+  { source: 'app_pm',      target: 'vercel',  label: 'deploy', v: ['cortex'] },
+  { source: 'app_zakupex', target: 'vercel',  label: 'deploy', v: ['cortex'] },
+  { source: 'app_muszla',  target: 'vercel',  label: 'deploy', v: ['cortex'] },
+  { source: 'deploy_ftp_sh', target: 'dhosting', label: 'FTP',  v: ['cortex'] },
+  { source: 'laptop', target: 'timer_context', label: 'runs', v: ['cortex'] },
+  { source: 'laptop', target: 'timer_smoke',   label: 'runs', v: ['cortex'] },
+  { source: 'laptop', target: 'timer_seo',     label: 'runs', v: ['cortex'] },
+  { source: 'laptop', target: 'timer_backup',  label: 'runs', v: ['cortex'] },
+  { source: 'dhosting', target: 'cron_scan',    label: 'runs', v: ['cortex'] },
+  { source: 'dhosting', target: 'cron_summary', label: 'runs', v: ['cortex'] },
+  { source: 'dhosting', target: 'cron_retry',   label: 'runs', v: ['cortex'] },
+
+  // ========== BIZNESY EDGES ==========
+  { source: 'biz_peg', target: 'biz_pei',     label: '', v: ['biznesy','zespol'] },
+  { source: 'biz_peg', target: 'biz_peo',     label: '', v: ['biznesy','zespol'] },
+  { source: 'biz_peg', target: 'biz_per',     label: '', v: ['biznesy','zespol'] },
+  { source: 'biz_peo', target: 'biz_indu',    label: '', v: ['biznesy','zespol'] },
+  { source: 'biz_peo', target: 'biz_sunday',  label: '', v: ['biznesy','zespol'] },
+  { source: 'biz_peo', target: 'biz_gea',     label: '', v: ['biznesy','zespol'] },
+  { source: 'biz_peo', target: 'biz_spot',    label: '', v: ['biznesy','zespol'] },
+  { source: 'biz_per', target: 'biz_muszla',  label: '', v: ['biznesy','zespol'] },
+  { source: 'biz_per', target: 'biz_beachbox',label: '', v: ['biznesy','zespol'] },
+  { source: 'biz_per', target: 'biz_sunset',  label: '', v: ['biznesy','zespol'] },
+  // Strategia -> PEI
+  { source: 'biz_pei', target: 'str_noraco',   label: 'w trakcie',  v: ['biznesy'] },
+  { source: 'biz_pei', target: 'str_leba',     label: 'umowa',      v: ['biznesy'] },
+  { source: 'biz_pei', target: 'str_rogowo',   label: 'umowa',      v: ['biznesy'] },
+  { source: 'biz_pei', target: 'str_wildpearl',label: 'umowa',      v: ['biznesy'] },
+  { source: 'biz_pei', target: 'str_area',     label: 'w trakcie',  v: ['biznesy'] },
+  { source: 'biz_pei', target: 'str_grzybowo', label: 'w trakcie',  v: ['biznesy'] },
+  { source: 'biz_pei', target: 'str_biedronka',label: 'w trakcie',  v: ['biznesy'] },
+  { source: 'biz_pei', target: 'str_foodhall', label: 'pauza',      v: ['biznesy'] },
+  { source: 'biz_pei', target: 'str_celka',    label: 'pauza',      v: ['biznesy'] },
+  { source: 'biz_pei', target: 'str_p50',      label: 'pauza',      v: ['biznesy'] },
+
+  // ========== ZESPOL EDGES (pracownik -> punkt) ==========
+  { source: 'p_adi',        target: 'biz_peg',     label: 'CEO',    v: ['zespol'] },
+  { source: 'p_oliver',     target: 'biz_peg',     label: 'VP Ops', v: ['zespol'] },
+  { source: 'p_kamila',     target: 'biz_peg',     label: 'finanse',v: ['zespol'] },
+  { source: 'p_paula',      target: 'biz_peo',     label: 'admin',  v: ['zespol'] },
+  { source: 'p_paula',      target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_paula',      target: 'biz_pei',     label: '',       v: ['zespol'] },
+  { source: 'p_paula',      target: 'biz_indu',    label: '',       v: ['zespol'] },
+  { source: 'p_maja',       target: 'biz_peo',     label: 'PM',     v: ['zespol'] },
+  { source: 'p_maja',       target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_maja',       target: 'biz_indu',    label: '',       v: ['zespol'] },
+  { source: 'p_maja',       target: 'biz_sunday',  label: '',       v: ['zespol'] },
+  { source: 'p_patrycja',   target: 'biz_peo',     label: 'dyr. op.',v: ['zespol'] },
+  { source: 'p_patrycja',   target: 'biz_indu',    label: '',       v: ['zespol'] },
+  { source: 'p_patrycja',   target: 'biz_sunday',  label: '',       v: ['zespol'] },
+  { source: 'p_ula',        target: 'biz_muszla',  label: 'dyrektor',v: ['zespol'] },
+  { source: 'p_ula',        target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_mateusz_k',  target: 'biz_peo',     label: '',       v: ['zespol'] },
+  { source: 'p_mateusz_k',  target: 'biz_indu',    label: '',       v: ['zespol'] },
+  { source: 'p_mateusz_k',  target: 'biz_sunday',  label: '',       v: ['zespol'] },
+  { source: 'p_dorota_k',   target: 'biz_peo',     label: '',       v: ['zespol'] },
+  { source: 'p_dorota_k',   target: 'biz_indu',    label: '',       v: ['zespol'] },
+  { source: 'p_dorota_k',   target: 'biz_sunday',  label: '',       v: ['zespol'] },
+  { source: 'p_beata',      target: 'biz_peo',     label: '',       v: ['zespol'] },
+  { source: 'p_beata',      target: 'biz_indu',    label: '',       v: ['zespol'] },
+  { source: 'p_beata',      target: 'biz_sunday',  label: '',       v: ['zespol'] },
+  { source: 'p_daria',      target: 'biz_peo',     label: '',       v: ['zespol'] },
+  { source: 'p_daria',      target: 'biz_spot',    label: '',       v: ['zespol'] },
+  { source: 'p_katarzyna',  target: 'biz_peo',     label: '',       v: ['zespol'] },
+  { source: 'p_katarzyna',  target: 'biz_spot',    label: '',       v: ['zespol'] },
+  { source: 'p_bartosz_p',  target: 'biz_per',     label: 'B2B',    v: ['zespol'] },
+  { source: 'p_bartosz_p',  target: 'biz_peo',     label: '',       v: ['zespol'] },
+  { source: 'p_tomasz',     target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_dorota_b',   target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_dorota_b',   target: 'biz_sunset',  label: '',       v: ['zespol'] },
+  { source: 'p_tetiana',    target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_tetiana',    target: 'biz_beachbox',label: '',       v: ['zespol'] },
+  { source: 'p_bogdan',     target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_irmina',     target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_irmina',     target: 'biz_beachbox',label: '',       v: ['zespol'] },
+  { source: 'p_krzysztof_s',target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_krzysztof_s',target: 'biz_muszla',  label: '',       v: ['zespol'] },
+  { source: 'p_julia',      target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_julia',      target: 'biz_muszla',  label: '',       v: ['zespol'] },
+  { source: 'p_kamil_k',    target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_kamil_k',    target: 'biz_muszla',  label: '',       v: ['zespol'] },
+  { source: 'p_patrycja_k', target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_patrycja_k', target: 'biz_muszla',  label: '',       v: ['zespol'] },
+  { source: 'p_anastasiia', target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_anastasiia', target: 'biz_beachbox',label: '',       v: ['zespol'] },
+  { source: 'p_vasyl',      target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_vasyl',      target: 'biz_beachbox',label: '',       v: ['zespol'] },
+  { source: 'p_oliwia',     target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_oliwia',     target: 'biz_beachbox',label: '',       v: ['zespol'] },
+  { source: 'p_iryna_s',    target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_iryna_s',    target: 'biz_beachbox',label: '',       v: ['zespol'] },
+  { source: 'p_tadeusz',    target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_krystian',   target: 'biz_per',     label: 'B2B',    v: ['zespol'] },
+  { source: 'p_viktoria',   target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_viktoria',   target: 'biz_beachbox',label: '',       v: ['zespol'] },
+  { source: 'p_inna',       target: 'biz_per',     label: '',       v: ['zespol'] },
+  { source: 'p_inna',       target: 'biz_beachbox',label: '',       v: ['zespol'] },
+];
+
+// === ACTIVE VIEW ===
+let activeView = 'cortex';
+
+function buildElements(view) {
+  const els = [];
+  const visibleNodeIds = new Set();
+
+  nodes.forEach(n => {
+    if (view === 'all' || n.v.includes(view)) {
+      visibleNodeIds.add(n.id);
+      els.push({ data: { id: n.id, label: n.label, type: n.type, desc: n.desc } });
+    }
+  });
+
+  edges.forEach((e, i) => {
+    if ((view === 'all' || e.v.includes(view)) && visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)) {
+      els.push({ data: { id: 'e' + i, source: e.source, target: e.target, label: e.label } });
+    }
+  });
+
+  return els;
+}
+
+// === CYTOSCAPE ===
+const cy = cytoscape({
+  container: document.getElementById('cy'),
+  elements: buildElements('cortex'),
+  style: [
+    {
+      selector: 'node',
+      style: {
+        'label': 'data(label)',
+        'text-valign': 'bottom',
+        'text-margin-y': 6,
+        'font-size': 10,
+        'font-family': '-apple-system, BlinkMacSystemFont, sans-serif',
+        'color': '#c9d1d9',
+        'text-outline-color': '#0f1117',
+        'text-outline-width': 2,
+        'width': 36,
+        'height': 36,
+        'border-width': 2,
+        'border-color': '#30363d',
+      }
+    },
+    ...Object.entries(TYPES).map(([type, cfg]) => ({
+      selector: `node[type="${type}"]`,
+      style: {
+        'background-color': cfg.color,
+        'shape': cfg.shape,
+        'border-color': cfg.color,
+        'border-opacity': 0.4,
+      }
+    })),
+    // Big hubs
+    { selector: '#repo_cortex', style: { 'width': 180, 'height': 180, 'font-size': 18, 'font-weight': 'bold', 'border-width': 0, 'background-color': 'transparent', 'background-image': 'cortex-logo.png', 'background-fit': 'cover', 'background-clip': 'none', 'background-opacity': 1, 'shape': 'ellipse', 'color': '#3fb950' } },
+    { selector: '#biz_peg',     style: { 'width': 60, 'height': 60, 'font-size': 14, 'font-weight': 'bold', 'border-width': 3 } },
+    { selector: '#biz_pei',     style: { 'width': 50, 'height': 50, 'font-size': 12, 'font-weight': 'bold' } },
+    { selector: '#biz_peo',     style: { 'width': 50, 'height': 50, 'font-size': 12, 'font-weight': 'bold' } },
+    { selector: '#biz_per',     style: { 'width': 50, 'height': 50, 'font-size': 12, 'font-weight': 'bold' } },
+    // Edges — labels hidden by default, dim lines
+    {
+      selector: 'edge',
+      style: {
+        'width': 1,
+        'line-color': '#21262d',
+        'target-arrow-color': '#21262d',
+        'target-arrow-shape': 'triangle',
+        'curve-style': 'bezier',
+        'arrow-scale': 0.7,
+        'opacity': 0.5,
+        'font-size': 8,
+        'color': '#484f58',
+        'text-outline-color': '#0f1117',
+        'text-outline-width': 1.5,
+        'text-rotation': 'autorotate',
+      }
+    },
+    // Show edge label on hover
+    {
+      selector: 'edge.show-label',
+      style: {
+        'label': 'data(label)',
+        'opacity': 1,
+        'width': 2,
+        'line-color': '#484f58',
+        'target-arrow-color': '#484f58',
+      }
+    },
+    // Interaction states
+    { selector: 'node.highlighted', style: { 'border-width': 4, 'border-color': '#f0e68c', 'font-weight': 'bold', 'z-index': 999 } },
+    { selector: 'node.faded', style: { 'opacity': 0.15 } },
+    { selector: 'edge.faded', style: { 'opacity': 0.08 } },
+    { selector: 'edge.highlighted', style: { 'label': 'data(label)', 'line-color': '#58a6ff', 'target-arrow-color': '#58a6ff', 'width': 2.5, 'opacity': 1, 'z-index': 999 } },
+    { selector: 'node.search-match', style: { 'border-width': 4, 'border-color': '#f85149', 'font-size': 12, 'font-weight': 'bold' } },
+  ],
+  layout: { name: 'cose', animate: false, nodeRepulsion: 80000, idealEdgeLength: 120, edgeElasticity: 100, gravity: 0.3, numIter: 1500, padding: 40 },
+  minZoom: 0.2,
+  maxZoom: 4,
+  wheelSensitivity: 0.3,
+});
+
+// === VIEW SWITCHING ===
+document.querySelectorAll('.views button').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const view = this.dataset.view;
+    activeView = view;
+    document.querySelectorAll('.views button').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+
+    cy.elements().remove();
+    cy.add(buildElements(view));
+    cy.layout({ name: 'cose', animate: false, nodeRepulsion: 80000, idealEdgeLength: 120, edgeElasticity: 100, gravity: 0.3, numIter: 1500, padding: 40 }).run();
+    cy.fit(undefined, 40);
+
+    sidebar.innerHTML = '<p class="empty">Kliknij node aby zobaczyc szczegoly</p>';
+    searchInput.value = '';
+    updateLegend(view);
+    updateStats(view);
+  });
+});
+
+// === SIDEBAR ===
+const sidebar = document.getElementById('sidebar');
+
+function showNodeDetails(node) {
+  const d = node.data();
+  const t = TYPES[d.type];
+  const connected = node.connectedEdges().connectedNodes().filter(n => n.id() !== node.id());
+
+  let connectionsHtml = '';
+  if (connected.length > 0) {
+    connectionsHtml = '<div class="connections"><h3>Polaczenia (' + connected.length + ')</h3>';
+    connected.forEach(n => {
+      const nt = TYPES[n.data('type')];
+      connectionsHtml += `<div class="conn-item" data-id="${n.id()}"><span style="color:${nt.color}">\u25CF</span> ${n.data('label')} <span style="color:#484f58;font-size:11px">${nt.label}</span></div>`;
+    });
+    connectionsHtml += '</div>';
+  }
+
+  sidebar.innerHTML = `
+    <h2>${d.label}</h2>
+    <span class="node-type" style="background:${t.color}22;color:${t.color};border:1px solid ${t.color}44">${t.label}</span>
+    <div class="detail"><div class="detail-label">Opis</div><div class="detail-value">${d.desc}</div></div>
+    ${connectionsHtml}
+  `;
+
+  sidebar.querySelectorAll('.conn-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const targetNode = cy.getElementById(el.dataset.id);
+      highlightNode(targetNode);
+      cy.animate({ center: { eles: targetNode }, zoom: 2 }, { duration: 300 });
+    });
+  });
+}
+
+function highlightNode(node) {
+  cy.elements().removeClass('highlighted faded search-match');
+  const neighborhood = node.closedNeighborhood();
+  cy.elements().not(neighborhood).addClass('faded');
+  neighborhood.addClass('highlighted');
+  node.addClass('highlighted');
+  showNodeDetails(node);
+}
+
+cy.on('tap', 'node', function(e) { highlightNode(e.target); });
+cy.on('tap', function(e) {
+  if (e.target === cy) {
+    cy.elements().removeClass('highlighted faded search-match show-label');
+    sidebar.innerHTML = '<p class="empty">Kliknij node aby zobaczyc szczegoly</p>';
+  }
+});
+
+// Edge hover — show label
+cy.on('mouseover', 'edge', function(e) { e.target.addClass('show-label'); });
+cy.on('mouseout', 'edge', function(e) { e.target.removeClass('show-label'); });
+
+// === SEARCH ===
+const searchInput = document.getElementById('search');
+searchInput.addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  cy.elements().removeClass('search-match faded highlighted');
+  if (!q) { sidebar.innerHTML = '<p class="empty">Kliknij node aby zobaczyc szczegoly</p>'; return; }
+
+  const matches = cy.nodes().filter(n =>
+    n.data('label').toLowerCase().includes(q) ||
+    n.data('desc').toLowerCase().includes(q) ||
+    n.data('type').toLowerCase().includes(q)
+  );
+
+  if (matches.length > 0) {
+    cy.nodes().not(matches).addClass('faded');
+    cy.edges().addClass('faded');
+    matches.addClass('search-match');
+    matches.connectedEdges().removeClass('faded');
+
+    if (matches.length === 1) {
+      highlightNode(matches[0]);
+    } else {
+      sidebar.innerHTML = `<h2>Wyniki (${matches.length})</h2>` +
+        matches.map(n => {
+          const nt = TYPES[n.data('type')];
+          return `<div class="conn-item" data-id="${n.id()}"><span style="color:${nt.color}">\u25CF</span> ${n.data('label')}</div>`;
+        }).join('');
+      sidebar.querySelectorAll('.conn-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const targetNode = cy.getElementById(el.dataset.id);
+          highlightNode(targetNode);
+          cy.animate({ center: { eles: targetNode }, zoom: 2 }, { duration: 300 });
+        });
+      });
+    }
+  }
+});
+
+// === LEGEND (clickable — toggle type visibility) ===
+const hiddenTypes = new Set();
+
+function updateLegend(view) {
+  hiddenTypes.clear();
+  const visibleTypes = new Set();
+  nodes.forEach(n => { if (view === 'all' || n.v.includes(view)) visibleTypes.add(n.type); });
+  const legendEl = document.getElementById('legend');
+  legendEl.innerHTML = Object.entries(TYPES)
+    .filter(([k]) => visibleTypes.has(k))
+    .map(([k, v]) => {
+      const count = nodes.filter(n => n.type === k && (view === 'all' || n.v.includes(view))).length;
+      return `<div class="legend-item" data-type="${k}" style="cursor:pointer"><div class="legend-dot" style="background:${v.color}"></div>${v.label} (${count})</div>`;
+    }).join('');
+
+  legendEl.querySelectorAll('.legend-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const type = el.dataset.type;
+      if (hiddenTypes.has(type)) {
+        hiddenTypes.delete(type);
+        el.style.opacity = '1';
+      } else {
+        hiddenTypes.add(type);
+        el.style.opacity = '0.3';
+      }
+      // Apply filter
+      cy.nodes().forEach(n => {
+        if (hiddenTypes.has(n.data('type'))) {
+          n.style('display', 'none');
+        } else {
+          n.style('display', 'element');
+        }
+      });
+      cy.edges().forEach(e => {
+        const srcHidden = hiddenTypes.has(cy.getElementById(e.data('source')).data('type'));
+        const tgtHidden = hiddenTypes.has(cy.getElementById(e.data('target')).data('type'));
+        e.style('display', (srcHidden || tgtHidden) ? 'none' : 'element');
+      });
+    });
+  });
+}
+
+function updateStats(view) {
+  const visNodes = nodes.filter(n => view === 'all' || n.v.includes(view));
+  const visEdges = edges.filter(e => view === 'all' || e.v.includes(view));
+  document.getElementById('stats').textContent =
+    `${visNodes.length} nodes \u00B7 ${visEdges.length} edges \u00B7 Scroll = zoom \u00B7 Klik = detale \u00B7 / = szukaj \u00B7 Esc = reset`;
+}
+
+updateLegend('cortex');
+updateStats('cortex');
+
+// === KEYBOARD ===
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    cy.elements().removeClass('highlighted faded search-match');
+    sidebar.innerHTML = '<p class="empty">Kliknij node aby zobaczyc szczegoly</p>';
+    searchInput.value = '';
+  }
+  if (e.key === '/' && document.activeElement !== searchInput) {
+    e.preventDefault();
+    searchInput.focus();
+  }
+});
+</script>
+</body>
+</html>
