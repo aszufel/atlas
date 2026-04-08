@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Atlas — PEG Ecosystem</title>
+<meta name="description" content="Interaktywna mapa ekosystemu Partner Expert GROUP — technologia, biznesy, zespół">
+<meta property="og:title" content="Atlas — PEG Ecosystem">
+<meta property="og:description" content="Interaktywna mapa ekosystemu PEG: Cortex (skrypty, API, MCP), Biznesy (spółki, punkty, strategie), Zespół (pracownicy)">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://aszufel.github.io/atlas/">
 <script src="https://unpkg.com/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,18 +40,44 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .sidebar .conn-item:hover { color: #58a6ff; }
 .sidebar .empty { color: #484f58; font-size: 13px; font-style: italic; }
 
+.sidebar .welcome h2 { font-size: 16px; color: #58a6ff; margin-bottom: 8px; }
+.sidebar .welcome p { font-size: 13px; color: #8b949e; line-height: 1.5; margin-bottom: 12px; }
+.sidebar .welcome .shortcut { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; color: #8b949e; }
+.sidebar .welcome .shortcut kbd { background: #21262d; border: 1px solid #30363d; border-radius: 4px; padding: 1px 6px; font-size: 11px; color: #c9d1d9; font-family: monospace; }
+.sidebar .welcome .view-desc { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+.sidebar .welcome .view-desc h3 { font-size: 13px; color: #e1e4e8; margin-bottom: 4px; }
+.sidebar .welcome .view-desc p { font-size: 12px; margin-bottom: 0; }
+.sidebar .welcome .hint { font-size: 11px; color: #484f58; margin-top: 8px; border-top: 1px solid #21262d; padding-top: 8px; }
+
+.tooltip { position: absolute; background: #1c2128; border: 1px solid #30363d; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #e1e4e8; pointer-events: none; z-index: 1000; max-width: 260px; box-shadow: 0 4px 12px rgba(0,0,0,.4); transition: opacity .15s; }
+.tooltip .tt-label { font-weight: 600; margin-bottom: 2px; }
+.tooltip .tt-type { font-size: 10px; color: #8b949e; }
+.tooltip .tt-desc { font-size: 11px; color: #8b949e; margin-top: 4px; line-height: 1.4; }
+
 .legend { display: flex; gap: 12px; padding: 8px 20px; background: #161b22; border-top: 1px solid #30363d; flex-wrap: wrap; flex-shrink: 0; }
 .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8b949e; cursor: pointer; transition: opacity .15s; user-select: none; }
 .legend-item:hover { color: #e1e4e8; }
 .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
 
 .stats { font-size: 12px; color: #484f58; padding: 8px 20px; background: #161b22; border-top: 1px solid #30363d; text-align: center; }
+
+@media (max-width: 768px) {
+  .main { flex-direction: column; }
+  .sidebar { width: 100%; max-height: 40vh; border-left: none; border-top: 1px solid #30363d; }
+  #cy { min-height: 50vh; }
+  .topbar { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  .search-box { margin-left: 0; width: 100%; }
+  .search-box input { width: 100%; }
+  .logo-group { display: flex; align-items: center; gap: 12px; width: 100%; }
+}
 </style>
 </head>
 <body>
 
+<div id="tooltip" class="tooltip" style="display:none"></div>
+
 <div class="topbar">
-  <div class="logo">ATLAS</div>
+  <div class="logo">ATLAS <span style="font-size:11px;font-weight:400;color:#8b949e;letter-spacing:0">— mapa ekosystemu PEG</span></div>
   <div class="views">
     <button class="active" data-view="cortex">Cortex</button>
     <button data-view="biznesy">Biznesy</button>
@@ -573,15 +604,71 @@ document.querySelectorAll('.views button').forEach(btn => {
     cy.layout({ name: 'cose', animate: false, nodeRepulsion: 80000, idealEdgeLength: 120, edgeElasticity: 100, gravity: 0.3, numIter: 1500, padding: 40 }).run();
     cy.fit(undefined, 40);
 
-    sidebar.innerHTML = '<p class="empty">Kliknij node aby zobaczyc szczegoly</p>';
+    showWelcome(view);
     searchInput.value = '';
     updateLegend(view);
     updateStats(view);
   });
 });
 
+// === TOOLTIP ===
+const tooltipEl = document.getElementById('tooltip');
+let tooltipTimeout = null;
+
+cy.on('mouseover', 'node', function(e) {
+  clearTimeout(tooltipTimeout);
+  const node = e.target;
+  const d = node.data();
+  const t = TYPES[d.type];
+  const pos = e.renderedPosition;
+  tooltipEl.innerHTML = `<div class="tt-label">${d.label}</div><div class="tt-type" style="color:${t.color}">${t.label}</div><div class="tt-desc">${d.desc}</div>`;
+  tooltipEl.style.left = (pos.x + 20) + 'px';
+  tooltipEl.style.top = (pos.y + 60) + 'px';
+  tooltipEl.style.display = 'block';
+});
+cy.on('mouseout', 'node', function() {
+  tooltipTimeout = setTimeout(() => { tooltipEl.style.display = 'none'; }, 100);
+});
+cy.on('tap', 'node', function() { tooltipEl.style.display = 'none'; });
+cy.on('pan zoom', function() { tooltipEl.style.display = 'none'; });
+
 // === SIDEBAR ===
 const sidebar = document.getElementById('sidebar');
+
+const VIEW_INFO = {
+  cortex: { title: 'Cortex', icon: '\u{1F9E0}', desc: 'System operacyjny AI — skrypty, API, MCP, timery, aplikacje i repozytoria. Wszystko co napędza PEG od strony technologicznej.', hub: 'repo_cortex' },
+  biznesy: { title: 'Biznesy', icon: '\u{1F3E2}', desc: 'Struktura grupy PEG — spółki (PEI, PEO, PER), punkty operacyjne i projekty strategiczne.', hub: 'biz_peg' },
+  zespol: { title: 'Zespół', icon: '\u{1F465}', desc: 'Pracownicy PEG — kto gdzie pracuje, powiązania z punktami i spółkami.', hub: 'p_adi' },
+};
+
+function showWelcome(view) {
+  const info = VIEW_INFO[view];
+  const visNodes = nodes.filter(n => n.v.includes(view));
+  const visEdges = edges.filter(e => e.v.includes(view));
+  const typeCounts = {};
+  visNodes.forEach(n => { typeCounts[n.type] = (typeCounts[n.type] || 0) + 1; });
+  const typeList = Object.entries(typeCounts).map(([k, v]) => `<span style="color:${TYPES[k].color}">\u25CF</span> ${TYPES[k].label}: ${v}`).join('<br>');
+
+  sidebar.innerHTML = `
+    <div class="welcome">
+      <h2>${info.icon} ${info.title}</h2>
+      <div class="view-desc">
+        <p>${info.desc}</p>
+      </div>
+      <div class="detail"><div class="detail-label">Na mapie</div><div class="detail-value" style="font-size:12px;line-height:1.6">${typeList}</div></div>
+      <div style="margin-top:12px">
+        <div class="shortcut"><kbd>/</kbd> Szukaj</div>
+        <div class="shortcut"><kbd>Klik</kbd> Detale node'a</div>
+        <div class="shortcut"><kbd>Scroll</kbd> Zoom</div>
+        <div class="shortcut"><kbd>Esc</kbd> Reset widoku</div>
+        <div class="shortcut"><kbd>Legenda</kbd> Klik = filtruj typ</div>
+      </div>
+      <p class="hint">Najedź na node żeby zobaczyć opis. Kliknij żeby zobaczyć połączenia.</p>
+    </div>
+  `;
+}
+
+showWelcome('cortex');
 
 function showNodeDetails(node) {
   const d = node.data();
@@ -627,7 +714,7 @@ cy.on('tap', 'node', function(e) { highlightNode(e.target); });
 cy.on('tap', function(e) {
   if (e.target === cy) {
     cy.elements().removeClass('highlighted faded search-match show-label');
-    sidebar.innerHTML = '<p class="empty">Kliknij node aby zobaczyc szczegoly</p>';
+    showWelcome(activeView);
   }
 });
 
@@ -725,11 +812,19 @@ function updateStats(view) {
 updateLegend('cortex');
 updateStats('cortex');
 
+// Auto-focus hub node on load
+setTimeout(() => {
+  const hub = cy.getElementById('repo_cortex');
+  if (hub.length) {
+    cy.animate({ center: { eles: hub }, zoom: 1.2 }, { duration: 800 });
+  }
+}, 500);
+
 // === KEYBOARD ===
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     cy.elements().removeClass('highlighted faded search-match');
-    sidebar.innerHTML = '<p class="empty">Kliknij node aby zobaczyc szczegoly</p>';
+    showWelcome(activeView);
     searchInput.value = '';
   }
   if (e.key === '/' && document.activeElement !== searchInput) {
