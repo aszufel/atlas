@@ -106,7 +106,7 @@ const TYPES = {
   api:      { label: 'API',        color: '#58a6ff', shape: 'round-rectangle', icon: 'tabler/cloud' },
   timer:    { label: 'Timer',      color: '#d29922', shape: 'round-rectangle', icon: 'tabler/clock' },
   cron:     { label: 'Cron PHP',   color: '#db6d28', shape: 'round-rectangle', icon: 'tabler/clock-play' },
-  mcp:      { label: 'MCP',        color: '#bc8cff', shape: 'hexagon',         icon: 'tabler/puzzle' },
+  mcp:      { label: 'MCP',        color: '#bc8cff', shape: 'round-rectangle', icon: 'tabler/puzzle' },
   app:      { label: 'Aplikacja',  color: '#f778ba', shape: 'round-rectangle', icon: 'tabler/app-window' },
   repo:     { label: 'Repo',       color: '#8b949e', shape: 'round-rectangle', icon: 'tabler/git-branch' },
   core:     { label: 'Core file',  color: '#e3b341', shape: 'round-rectangle', icon: 'tabler/file-text' },
@@ -514,6 +514,21 @@ function buildElements(view) {
   return els;
 }
 
+// === LAYOUTS ===
+function getLayout(view) {
+  if (view === 'biznesy' || view === 'zespol') {
+    return cy.layout({
+      name: 'breadthfirst',
+      directed: true,
+      roots: view === 'biznesy' ? '#biz_peg' : '#biz_peg',
+      spacingFactor: 1.2,
+      animate: false,
+      padding: 40,
+    });
+  }
+  return cy.layout({ name: 'cose', animate: false, nodeRepulsion: 80000, idealEdgeLength: 120, edgeElasticity: 100, gravity: 0.3, numIter: 1500, padding: 40 });
+}
+
 // === CYTOSCAPE ===
 const cy = cytoscape({
   container: document.getElementById('cy'),
@@ -530,8 +545,8 @@ const cy = cytoscape({
         'color': '#c9d1d9',
         'text-outline-color': '#0f1117',
         'text-outline-width': 2,
-        'width': 36,
-        'height': 36,
+        'width': 44,
+        'height': 44,
         'border-width': 2,
         'border-color': '#30363d',
       }
@@ -552,22 +567,29 @@ const cy = cytoscape({
       }
     })),
     // Big hubs
-    { selector: '#repo_cortex', style: { 'width': 180, 'height': 180, 'font-size': 18, 'font-weight': 'bold', 'border-width': 0, 'background-color': 'transparent', 'background-image': 'cortex-logo.png', 'background-fit': 'cover', 'background-clip': 'none', 'background-opacity': 1, 'shape': 'ellipse', 'color': '#3fb950' } },
-    { selector: '#biz_peg',     style: { 'width': 60, 'height': 60, 'font-size': 14, 'font-weight': 'bold', 'border-width': 3 } },
-    { selector: '#biz_pei',     style: { 'width': 50, 'height': 50, 'font-size': 12, 'font-weight': 'bold' } },
-    { selector: '#biz_peo',     style: { 'width': 50, 'height': 50, 'font-size': 12, 'font-weight': 'bold' } },
-    { selector: '#biz_per',     style: { 'width': 50, 'height': 50, 'font-size': 12, 'font-weight': 'bold' } },
+    { selector: '#repo_cortex', style: { 'width': 90, 'height': 90, 'font-size': 16, 'font-weight': 'bold', 'border-width': 3, 'border-color': '#3fb950', 'background-color': '#161b22', 'background-image': `${ICON_BASE}/tabler/brain.svg?color=%233fb950`, 'background-fit': 'contain', 'background-clip': 'none', 'background-width': '55%', 'background-height': '55%', 'shape': 'ellipse', 'color': '#3fb950' } },
+    { selector: '#biz_peg',     style: { 'width': 70, 'height': 70, 'font-size': 14, 'font-weight': 'bold', 'border-width': 3 } },
+    { selector: '#biz_pei',     style: { 'width': 56, 'height': 56, 'font-size': 12, 'font-weight': 'bold' } },
+    { selector: '#biz_peo',     style: { 'width': 56, 'height': 56, 'font-size': 12, 'font-weight': 'bold' } },
+    { selector: '#biz_per',     style: { 'width': 56, 'height': 56, 'font-size': 12, 'font-weight': 'bold' } },
+    // Kluczowe osoby — większe node'y
+    { selector: '#p_adi',       style: { 'width': 56, 'height': 56, 'font-size': 12, 'font-weight': 'bold', 'border-width': 3, 'border-color': '#f0e68c' } },
+    { selector: '#p_oliver',    style: { 'width': 52, 'height': 52, 'font-size': 12, 'font-weight': 'bold' } },
+    { selector: '#p_patrycja',  style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
+    { selector: '#p_ula',       style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
+    { selector: '#p_kamila',    style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
+    { selector: '#p_maja',      style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
     // Edges — labels hidden by default, dim lines
     {
       selector: 'edge',
       style: {
-        'width': 1,
-        'line-color': '#21262d',
-        'target-arrow-color': '#21262d',
+        'width': 1.5,
+        'line-color': '#30363d',
+        'target-arrow-color': '#30363d',
         'target-arrow-shape': 'triangle',
         'curve-style': 'bezier',
         'arrow-scale': 0.7,
-        'opacity': 0.5,
+        'opacity': 0.6,
         'font-size': 8,
         'color': '#484f58',
         'text-outline-color': '#0f1117',
@@ -609,7 +631,7 @@ document.querySelectorAll('.views button').forEach(btn => {
 
     cy.elements().remove();
     cy.add(buildElements(view));
-    cy.layout({ name: 'cose', animate: false, nodeRepulsion: 80000, idealEdgeLength: 120, edgeElasticity: 100, gravity: 0.3, numIter: 1500, padding: 40 }).run();
+    getLayout(view).run();
     cy.fit(undefined, 40);
 
     showWelcome(view);
