@@ -110,6 +110,8 @@ const TYPES = {
   app:      { label: 'Aplikacja',  color: '#f778ba', shape: 'round-rectangle', icon: 'tabler/app-window' },
   repo:     { label: 'Repo',       color: '#8b949e', shape: 'round-rectangle', icon: 'tabler/git-branch' },
   core:     { label: 'Core file',  color: '#e3b341', shape: 'round-rectangle', icon: 'tabler/file-text' },
+  persona:  { label: 'Persona',    color: '#f97583', shape: 'ellipse',         icon: 'tabler/robot' },
+  automat:  { label: 'Automat',    color: '#d2a8ff', shape: 'round-rectangle', icon: 'tabler/clock-bolt' },
   hosting:  { label: 'Hosting',    color: '#56d364', shape: 'round-rectangle', icon: 'tabler/server' },
   holding:  { label: 'Holding',    color: '#f0e68c', shape: 'round-rectangle', icon: 'tabler/building-skyscraper' },
   spolka:   { label: 'Spółka',     color: '#ff7b72', shape: 'round-rectangle', icon: 'tabler/briefcase' },
@@ -200,29 +202,43 @@ const nodes = [
   // Apps
   { id: 'app_pm',          label: 'PM',                    type: 'app', v: ['cortex'], desc: 'Pricing Manager — Next.js 16, Supabase, Apify — price.partnerexpert.work' },
   { id: 'app_zakupex',     label: 'ZakupEX',               type: 'app', v: ['cortex'], desc: 'System faktur — Next.js 16, Supabase, OCR GPT-4o — zakupex.vercel.app' },
-  { id: 'app_janusz',      label: 'Janusz',                type: 'app', v: ['cortex'], desc: 'WhatsApp bot PEG — Node.js, Supabase, whatsapp-web.js — Mikrus VPS' },
-  { id: 'app_gustaw',      label: 'Gustaw',                type: 'app', v: ['cortex'], desc: 'Gmail add-on (Apps Script) — AI kategoryzacja, delegacja, Notion sync' },
+  { id: 'app_janusz',      label: 'Janusz',                type: 'app', v: ['cortex'], desc: 'PERSONA: WhatsApp bot zespolu PEG + PM obowiazki — Node.js, Baileys, GPT-4o-mini — Mikrus (🟢 live)' },
+  { id: 'app_gustaw',      label: 'Gustaw',                type: 'app', v: ['cortex'], desc: 'PERSONA: WhatsApp asystent Adiego — Node.js, Baileys, GPT-4o — Mikrus (🔴 czeka na SIM)' },
   { id: 'app_bot_voice',   label: 'BOT Voice',             type: 'app', v: ['cortex'], desc: 'Voice -> Notion — Next.js 14, Whisper, Vercel' },
   { id: 'app_atlas',       label: 'Atlas',                 type: 'app', v: ['cortex'], desc: 'Interaktywna mapa ekosystemu PEG (Cytoscape.js)' },
   { id: 'app_muszla',      label: 'muszla.pl',             type: 'app', v: ['cortex'], desc: 'muszlakolobrzeg.pl — Astro 5, React 19, Tailwind 4, Vercel' },
-  { id: 'app_sac',         label: 'SAC',                   type: 'app', v: ['cortex'], desc: 'System Automatycznej Ceny — ~/APP/SAC' },
-  { id: 'app_otoceny',     label: 'otoceny',               type: 'app', v: ['cortex'], desc: 'Scraping cen konkurencji — ~/APP/otoceny' },
+
+  // Nowe skrypty (2026-04-11)
+  { id: 'gbp_py',             label: 'gbp.py',               type: 'script', v: ['cortex'], desc: 'Google Business Profile — list, open, close, hours, reviews, reply. Aliasy: muszla, indu, sunday...' },
+  { id: 'content_pipeline_py',label: 'content_pipeline.py',  type: 'script', v: ['cortex'], desc: 'Rolki + posty z podcastu Tamborskiego — Whisper, GPT-4o, ffmpeg, OpenCV' },
+  { id: 'gbp_auto_reply_py', label: 'gbp_auto_reply.py',    type: 'script', v: ['cortex'], desc: 'Auto-odpowiedzi na recenzje Google — GPT-4o-mini' },
+  { id: 'straznik_py',       label: 'straznik.py',          type: 'script', v: ['cortex'], desc: 'Health check: Janusz WA, dysk, backup, tokeny, Notion' },
+  { id: 'archiwista_sh',     label: 'archiwista.sh',        type: 'script', v: ['cortex'], desc: 'Backup PG + .env → strych.mikr.us' },
+
+  // Automaty Mikrusa (crony cortex)
+  { id: 'cron_archiwista',   label: 'archiwista (4:00)',     type: 'automat', v: ['cortex'], desc: '🟢 Backup PG + .env → strych.mikr.us, codziennie 4:00, retencja 30 dni' },
+  { id: 'cron_straznik',     label: 'straznik (co 1h)',      type: 'automat', v: ['cortex'], desc: '🟢 Health check: Janusz, dysk, backup, tokeny, Notion. Alert WA do Adiego.' },
+  { id: 'cron_recenzent',    label: 'recenzent (co 4h)',     type: 'automat', v: ['cortex'], desc: '🟢 Auto-odpowiedzi na recenzje Google (5 obiektow PEG). GPT-4o-mini.' },
+  { id: 'cron_content_maker',label: 'content-maker (wt 3:00)',type:'automat', v: ['cortex'], desc: '🟡 Rolki z podcastu Tamborskiego. Skrypt gotowy, deploy w toku.' },
+
+  // Nowe API
+  { id: 'gbp_api',           label: 'GBP API',               type: 'api', v: ['cortex'], desc: 'Google Business Profile — wizytowki, recenzje, godziny' },
+  { id: 'fb_api',            label: 'Facebook API',           type: 'api', v: ['cortex'], desc: 'Page token Tamborski — auto-publish postow i rolek' },
+  { id: 'strych',            label: 'strych.mikr.us',        type: 'hosting', v: ['cortex'], desc: 'Serwer backupowy Mikrusa — 683GB, SSH/SCP, darmowy' },
 
   // Repos
-  { id: 'repo_cortex',     label: 'Cortex.git',            type: 'repo', v: ['cortex'], desc: 'System operacyjny AI — ~/Cortex' },
+  { id: 'repo_cortex',     label: 'Cortex.git',            type: 'repo', v: ['cortex'], desc: 'System operacyjny AI — ~/Cortex + /home/cortex/ na Mikrusie' },
   { id: 'repo_pm',         label: 'PM.git',                type: 'repo', v: ['cortex'], desc: 'Next.js, Supabase' },
   { id: 'repo_zakupex',    label: 'Zakupex.git',           type: 'repo', v: ['cortex'], desc: 'Next.js, Supabase' },
-  { id: 'repo_janusz',     label: 'Janusz.git',            type: 'repo', v: ['cortex'], desc: 'Node.js, Supabase' },
-  { id: 'repo_gustaw',     label: 'gustaw.git',            type: 'repo', v: ['cortex'], desc: 'Apps Script' },
-  { id: 'repo_sac',        label: 'SAC.git',               type: 'repo', v: ['cortex'], desc: 'Python' },
-  // gmail-ai.git i oto.git — usunięte lokalnie 2026-04-04, kod na GitHub
+  { id: 'repo_janusz',     label: 'Janusz.git',            type: 'repo', v: ['cortex'], desc: 'Node.js, Baileys, PostgreSQL' },
+  { id: 'repo_gustaw',     label: 'Gustaw.git',            type: 'repo', v: ['cortex'], desc: 'Node.js, Baileys, GPT-4o — WhatsApp asystent Adiego' },
   { id: 'repo_muszla',     label: 'muszla.pl.git',         type: 'repo', v: ['cortex'], desc: 'Astro' },
   { id: 'repo_voice',      label: 'voice-notion-app.git',  type: 'repo', v: ['cortex'], desc: 'Node.js' },
 
   // Hosting
   { id: 'vercel',          label: 'Vercel',                type: 'hosting', v: ['cortex'], desc: 'PM, ZakupEX, BOT Voice, muszla.pl' },
   { id: 'dhosting',        label: 'dhosting',              type: 'hosting', v: ['cortex'], desc: 'FTP: IND.U, Sunday, PEG, GEA + crony PHP (PM)' },
-  { id: 'mikrus',          label: 'Mikrus VPS',            type: 'hosting', v: ['cortex'], desc: 'leszek140, 1GB/10GB, 75PLN/rok — Janusz + PostgreSQL' },
+  { id: 'mikrus',          label: 'Mikrus VPS',            type: 'hosting', v: ['cortex'], desc: 'leszek140, 1GB/10GB — Persony: Janusz (🟢), Gustaw (🔴). Automaty: archiwista, straznik, recenzent (🟢), content-maker (🟡). Backup: strych.mikr.us' },
   { id: 'laptop',          label: 'Laptop (penguin)',       type: 'hosting', v: ['cortex'], desc: 'systemd timers, Cortex runtime — NIGDY crony produkcyjne' },
 
   // ========== BIZNESY VIEW ==========
@@ -360,7 +376,6 @@ const edges = [
   { source: 'env_file',    target: 'google_admin_py',  label: 'tokens',   v: ['cortex'] },
   { source: 'app_janusz',  target: 'mikrus',           label: 'deploy',   v: ['cortex'] },
   { source: 'repo_gustaw', target: 'app_gustaw',       label: 'builds',   v: ['cortex'] },
-  { source: 'repo_sac',    target: 'app_sac',          label: 'builds',   v: ['cortex'] },
   { source: 'app_bot_voice', target: 'vercel',         label: 'deploy',   v: ['cortex'] },
   { source: 'timer_context', target: 'update_context_py', label: 'triggers', v: ['cortex'] },
   { source: 'timer_smoke',   target: 'smoke_test_py',     label: 'triggers', v: ['cortex'] },
@@ -403,6 +418,42 @@ const edges = [
   { source: 'dhosting', target: 'cron_scan',    label: 'runs', v: ['cortex'] },
   { source: 'dhosting', target: 'cron_summary', label: 'runs', v: ['cortex'] },
   { source: 'dhosting', target: 'cron_retry',   label: 'runs', v: ['cortex'] },
+
+  // Nowe skrypty → repo
+  { source: 'repo_cortex', target: 'gbp_py',              label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'content_pipeline_py', label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'gbp_auto_reply_py',   label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'straznik_py',         label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'archiwista_sh',       label: 'contains', v: ['cortex'] },
+  // Nowe skrypty → API
+  { source: 'gbp_py',             target: 'gbp_api',       label: 'OAuth',      v: ['cortex'] },
+  { source: 'gbp_auto_reply_py',  target: 'gbp_api',       label: 'reviews',    v: ['cortex'] },
+  { source: 'gbp_auto_reply_py',  target: 'openai_api',    label: 'GPT reply',  v: ['cortex'] },
+  { source: 'content_pipeline_py',target: 'openai_api',     label: 'Whisper+GPT',v: ['cortex'] },
+  { source: 'content_pipeline_py',target: 'fb_api',         label: 'publish',    v: ['cortex'] },
+  { source: 'straznik_py',        target: 'notion_api_firm',label: 'ping',       v: ['cortex'] },
+  { source: 'straznik_py',        target: 'app_janusz',     label: 'health',     v: ['cortex'] },
+  { source: 'env_file',           target: 'gbp_py',         label: 'tokens',     v: ['cortex'] },
+  { source: 'env_file',           target: 'content_pipeline_py', label: 'tokens', v: ['cortex'] },
+  // Automaty → skrypty
+  { source: 'cron_archiwista',    target: 'archiwista_sh',       label: 'triggers', v: ['cortex'] },
+  { source: 'cron_straznik',      target: 'straznik_py',         label: 'triggers', v: ['cortex'] },
+  { source: 'cron_recenzent',     target: 'gbp_auto_reply_py',   label: 'triggers', v: ['cortex'] },
+  { source: 'cron_content_maker', target: 'content_pipeline_py', label: 'triggers', v: ['cortex'] },
+  // Automaty → Mikrus
+  { source: 'mikrus', target: 'cron_archiwista',    label: 'cron', v: ['cortex'] },
+  { source: 'mikrus', target: 'cron_straznik',      label: 'cron', v: ['cortex'] },
+  { source: 'mikrus', target: 'cron_recenzent',     label: 'cron', v: ['cortex'] },
+  { source: 'mikrus', target: 'cron_content_maker', label: 'cron', v: ['cortex'] },
+  // Backup → strych
+  { source: 'archiwista_sh', target: 'strych',   label: 'backup',  v: ['cortex'] },
+  { source: 'archiwista_sh', target: 'mikrus_pg',label: 'pg_dump', v: ['cortex'] },
+  // Straznik alert → Janusz API
+  { source: 'straznik_py',   target: 'app_janusz', label: 'alert WA', v: ['cortex'] },
+  // Recenzent alert → Janusz API
+  { source: 'gbp_auto_reply_py', target: 'app_janusz', label: 'raport WA', v: ['cortex'] },
+  // Persony → Mikrus
+  { source: 'app_gustaw', target: 'mikrus', label: 'deploy', v: ['cortex'] },
 
   // ========== BIZNESY EDGES ==========
   { source: 'biz_peg', target: 'biz_pei',     label: '', v: ['biznesy','zespol'] },
