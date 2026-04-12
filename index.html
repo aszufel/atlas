@@ -669,9 +669,52 @@ function getLayout(view) {
     });
   }
   if (view === 'zespol') {
-    return cy.layout({ name: 'cose', animate: false, nodeRepulsion: 60000, idealEdgeLength: 100, edgeElasticity: 80, gravity: 0.5, numIter: 2000, padding: 40 });
+    return cy.layout({
+      name: 'fcose',
+      animate: false,
+      quality: 'proof',
+      randomize: true,
+      nodeRepulsion: 10000,
+      idealEdgeLength: 100,
+      gravity: 0.3,
+      gravityRangeCompound: 1.5,
+      gravityCompound: 2.0,
+      nestingFactor: 0.1,
+      numIter: 3000,
+      padding: 30,
+      nodeSeparation: 40,
+      tile: true,
+      tilingPaddingVertical: 20,
+      tilingPaddingHorizontal: 20,
+      tilingCompareBy: (a, b) => {
+        const order = ['person_zarzad','person_management','person_kierownicy','person_specjalisci','person_pracownik_liniowy'];
+        const na = cy.getElementById(a).data('type');
+        const nb = cy.getElementById(b).data('type');
+        return order.indexOf(na) - order.indexOf(nb);
+      },
+      packComponents: true,
+    });
   }
-  return cy.layout({ name: 'cose', animate: false, nodeRepulsion: 80000, idealEdgeLength: 120, edgeElasticity: 100, gravity: 0.3, numIter: 1500, padding: 40 });
+  return cy.layout({
+    name: 'fcose',
+    animate: false,
+    quality: 'proof',
+    randomize: true,
+    nodeRepulsion: 7000,
+    idealEdgeLength: 110,
+    edgeElasticity: 0.45,
+    gravity: 0.25,
+    gravityRangeCompound: 1.2,
+    gravityCompound: 1.0,
+    nestingFactor: 0.3,
+    numIter: 2500,
+    padding: 30,
+    nodeSeparation: 60,
+    tile: true,
+    tilingPaddingVertical: 25,
+    tilingPaddingHorizontal: 25,
+    packComponents: true,
+  });
 }
 
 // === CYTOSCAPE ===
