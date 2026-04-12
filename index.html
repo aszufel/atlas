@@ -134,6 +134,37 @@ const TYPES = {
   punkt:    { label: 'Punkt',      color: '#ffa657', shape: 'round-rectangle', icon: 'tabler/map-pin' },
   strategia:{ label: 'Strategia',  color: '#7ee787', shape: 'round-rectangle', icon: 'tabler/chess-knight' },
   pracownik:{ label: 'Pracownik',  color: '#79c0ff', shape: 'ellipse',         icon: 'tabler/user' },
+  layer:    { label: 'Warstwa',    color: '#21262d', shape: 'round-rectangle', icon: '' },
+};
+
+// Layer groups — compound parent nodes (visual grouping)
+const layers = [
+  { id: 'L_GCP',      label: '☁️ Google Cloud Platform',  v: ['cortex'], desc: 'Wszystkie crony + backupy + monitoring. Project: ai-council-487609. Koszt ~10-12 zł/mies.' },
+  { id: 'L_MIKRUS',   label: '🐧 Mikrus VPS',              v: ['cortex'], desc: 'Persistent WA sesje + on-host pg_dump. leszek140, 20 zł/mies.' },
+  { id: 'L_LAPTOP',   label: '💻 Laptop (penguin)',        v: ['cortex'], desc: 'Praca interaktywna. Cortex runtime. ZERO cronów produkcyjnych.' },
+  { id: 'L_VERCEL',   label: '▲ Vercel',                  v: ['cortex'], desc: 'Apki frontend/backend Next.js.' },
+  { id: 'L_DHOSTING', label: '🌐 Dhosting',                v: ['cortex'], desc: 'Statyczne strony WWW. Crony PHP zablokowane.' },
+];
+
+// Node → Layer mapping (ktory node do ktorej warstwy)
+const nodeToLayer = {
+  // GCP
+  gcp: 'L_GCP', gcp_sm: 'L_GCP', gcp_bucket: 'L_GCP', gcp_ar: 'L_GCP', gcp_uptime: 'L_GCP',
+  cr_notion_backup: 'L_GCP', cr_supabase_backup: 'L_GCP', cr_cloudflare_backup: 'L_GCP',
+  cr_recenzent: 'L_GCP', cr_content: 'L_GCP',
+  sch_notion: 'L_GCP', sch_supabase: 'L_GCP', sch_cf: 'L_GCP', sch_recenzent: 'L_GCP',
+  sch_content: 'L_GCP', sch_pm_scan: 'L_GCP', sch_pm_summary: 'L_GCP', sch_pm_retry: 'L_GCP',
+  // Mikrus
+  mikrus: 'L_MIKRUS', app_janusz: 'L_MIKRUS', app_gustaw: 'L_MIKRUS',
+  mikrus_pg: 'L_MIKRUS', cron_archiwista: 'L_MIKRUS', archiwista_sh: 'L_MIKRUS', strych: 'L_MIKRUS',
+  // Laptop
+  laptop: 'L_LAPTOP', timer_context: 'L_LAPTOP', timer_smoke: 'L_LAPTOP',
+  timer_seo: 'L_LAPTOP', timer_claude_backup: 'L_LAPTOP', env_file: 'L_LAPTOP',
+  // Vercel
+  vercel: 'L_VERCEL', app_pm: 'L_VERCEL', app_zakupex: 'L_VERCEL',
+  app_bot_voice: 'L_VERCEL', app_muszla: 'L_VERCEL',
+  // Dhosting
+  dhosting: 'L_DHOSTING',
 };
 
 // v = views this node belongs to
@@ -598,10 +629,28 @@ function buildElements(view) {
   const els = [];
   const visibleNodeIds = new Set();
 
+  // Add layer parent nodes (only in cortex view)
+  const usedLayers = new Set();
+  nodes.forEach(n => {
+    if (view === 'all' || n.v.includes(view)) {
+      if (view === 'cortex' && nodeToLayer[n.id]) usedLayers.add(nodeToLayer[n.id]);
+    }
+  });
+  if (view === 'cortex') {
+    layers.forEach(L => {
+      if (usedLayers.has(L.id)) {
+        visibleNodeIds.add(L.id);
+        els.push({ data: { id: L.id, label: L.label, type: 'layer', desc: L.desc } });
+      }
+    });
+  }
+
   nodes.forEach(n => {
     if (view === 'all' || n.v.includes(view)) {
       visibleNodeIds.add(n.id);
-      els.push({ data: { id: n.id, label: n.label, type: n.type, desc: n.desc } });
+      const d = { id: n.id, label: n.label, type: n.type, desc: n.desc };
+      if (view === 'cortex' && nodeToLayer[n.id]) d.parent = nodeToLayer[n.id];
+      els.push({ data: d });
     }
   });
 
@@ -715,6 +764,28 @@ const cy = cytoscape({
         'background-image-opacity': 0.9,
       }
     })),
+    // Layer parent nodes — duże kontenery grupujące
+    {
+      selector: 'node[type="layer"]',
+      style: {
+        'background-color': '#161b22',
+        'background-opacity': 0.5,
+        'border-color': '#58a6ff',
+        'border-opacity': 0.3,
+        'border-width': 2,
+        'border-style': 'dashed',
+        'shape': 'round-rectangle',
+        'label': 'data(label)',
+        'text-valign': 'top',
+        'text-halign': 'center',
+        'text-margin-y': -8,
+        'font-size': 13,
+        'font-weight': 'bold',
+        'color': '#58a6ff',
+        'padding': '30px',
+        'background-image': 'none',
+      }
+    },
     // Big hubs
     { selector: '#repo_cortex', style: { 'width': 90, 'height': 90, 'font-size': 16, 'font-weight': 'bold', 'border-width': 3, 'border-color': '#3fb950', 'background-color': '#161b22', 'background-image': `${ICON_BASE}/tabler/brain.svg?color=%233fb950`, 'background-fit': 'contain', 'background-clip': 'none', 'background-width': '55%', 'background-height': '55%', 'shape': 'ellipse', 'color': '#3fb950' } },
     { selector: '#biz_peg',     style: { 'width': 70, 'height': 70, 'font-size': 14, 'font-weight': 'bold', 'border-width': 3 } },
