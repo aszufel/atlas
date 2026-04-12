@@ -986,7 +986,7 @@ const sidebar = document.getElementById('sidebar');
 const VIEW_INFO = {
   cortex: { title: 'Cortex', icon: '\u{1F9E0}', desc: 'System operacyjny AI — skrypty, API, MCP, timery, aplikacje i repozytoria. Wszystko co napędza PEG od strony technologicznej.', hub: 'repo_cortex' },
   biznesy: { title: 'Biznesy', icon: '\u{1F3E2}', desc: 'Struktura grupy PEG — spółki (PEI, PEO, PER), punkty operacyjne i projekty strategiczne.', hub: 'biz_peg' },
-  zespol: { title: 'Zespół', icon: '\u{1F465}', desc: 'Pracownicy PEG — kto gdzie pracuje, powiązania z punktami i spółkami.', hub: 'p_adi' },
+  zespol: { title: 'Zespół', icon: '\u{1F465}', desc: 'Pracownicy PEG — kto gdzie pracuje, powiązania z punktami i spółkami.', hub: 'p_adrianszufel' },
 };
 
 function showWelcome(view) {
@@ -994,7 +994,10 @@ function showWelcome(view) {
   const visNodes = nodes.filter(n => n.v.includes(view));
   const visEdges = edges.filter(e => e.v.includes(view));
   const typeCounts = {};
-  visNodes.forEach(n => { typeCounts[n.type] = (typeCounts[n.type] || 0) + 1; });
+  visNodes.forEach(n => {
+    if (n.type === 'group' || n.type === 'layer') return;  // kontenery nie w statsach
+    typeCounts[n.type] = (typeCounts[n.type] || 0) + 1;
+  });
   const typeList = Object.entries(typeCounts).map(([k, v]) => `<span style="color:${TYPES[k].color}">\u25CF</span> ${TYPES[k].label}: ${v}`).join('<br>');
 
   sidebar.innerHTML = `
@@ -1160,7 +1163,10 @@ const hiddenTypes = new Set();
 function updateLegend(view) {
   hiddenTypes.clear();
   const visibleTypes = new Set();
-  nodes.forEach(n => { if (view === 'all' || n.v.includes(view)) visibleTypes.add(n.type); });
+  nodes.forEach(n => {
+    if (n.type === 'group' || n.type === 'layer') return;  // kontenery nie w legendzie
+    if (view === 'all' || n.v.includes(view)) visibleTypes.add(n.type);
+  });
   const legendEl = document.getElementById('legend');
   legendEl.innerHTML = Object.entries(TYPES)
     .filter(([k]) => visibleTypes.has(k))
