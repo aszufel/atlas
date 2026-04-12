@@ -583,6 +583,35 @@ function buildElements(view) {
   return els;
 }
 
+// Node'y z backupem (badge w prawym dolnym rogu)
+const BACKED_UP = new Set([
+  'env_file', 'mikrus_pg',                                              // archiwista → strych
+  'repo_cortex', 'repo_pm', 'repo_zakupex', 'repo_janusz',              // git/GitHub
+  'repo_gustaw', 'repo_muszla', 'repo_voice',
+]);
+
+function applyBackupBadges() {
+  cy.nodes().forEach(node => {
+    if (BACKED_UP.has(node.id())) {
+      const t = TYPES[node.data('type')];
+      const isHub = node.id() === 'repo_cortex';
+      const mainIcon = isHub
+        ? `${ICON_BASE}/tabler/brain.svg?color=%233fb950`
+        : `${ICON_BASE}/${t.icon}.svg?color=%23ffffff`;
+      node.style({
+        'background-image': [mainIcon, `${ICON_BASE}/tabler/cloud-check.svg?color=%2356d364`],
+        'background-width': [isHub ? '55%' : '60%', '24%'],
+        'background-height': [isHub ? '55%' : '60%', '24%'],
+        'background-position-x': ['50%', '92%'],
+        'background-position-y': ['50%', '92%'],
+        'background-fit': ['contain', 'contain'],
+        'background-clip': ['none', 'none'],
+        'background-image-opacity': [0.9, 1],
+      });
+    }
+  });
+}
+
 // === LAYOUTS ===
 function getLayout(view) {
   if (view === 'biznesy') {
@@ -704,6 +733,7 @@ document.querySelectorAll('.views button').forEach(btn => {
     cy.add(buildElements(view));
     getLayout(view).run();
     cy.fit(undefined, 40);
+    applyBackupBadges();
 
     showWelcome(view);
     searchInput.value = '';
@@ -722,7 +752,8 @@ cy.on('mouseover', 'node', function(e) {
   const d = node.data();
   const t = TYPES[d.type];
   const pos = e.renderedPosition;
-  tooltipEl.innerHTML = `<div class="tt-label">${d.label}</div><div class="tt-type" style="color:${t.color}"><img src="${ICON_BASE}/${t.icon}.svg?color=${encodeURIComponent(t.color)}" style="width:12px;height:12px;vertical-align:middle;margin-right:4px">${t.label}</div><div class="tt-desc">${d.desc}</div>`;
+  const backupBadge = BACKED_UP.has(d.id) ? `<div style="font-size:10px;color:#56d364;margin-top:2px"><img src="${ICON_BASE}/tabler/cloud-check.svg?color=%2356d364" style="width:11px;height:11px;vertical-align:middle;margin-right:3px">backup aktywny</div>` : '';
+  tooltipEl.innerHTML = `<div class="tt-label">${d.label}</div><div class="tt-type" style="color:${t.color}"><img src="${ICON_BASE}/${t.icon}.svg?color=${encodeURIComponent(t.color)}" style="width:12px;height:12px;vertical-align:middle;margin-right:4px">${t.label}</div>${backupBadge}<div class="tt-desc">${d.desc}</div>`;
   tooltipEl.style.display = 'block';
   const cyRect = document.getElementById('cy').getBoundingClientRect();
   let tx = cyRect.left + pos.x + 20;
@@ -937,6 +968,7 @@ updateStats('cortex');
 
 // Auto-focus hub node on load
 setTimeout(() => {
+  applyBackupBadges();
   const hub = cy.getElementById('repo_cortex');
   if (hub.length) {
     cy.animate({ center: { eles: hub }, zoom: 1.2 }, { duration: 800 });
