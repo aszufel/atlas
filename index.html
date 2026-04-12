@@ -171,6 +171,11 @@ const nodeToLayer = {
   // Laptop
   laptop: 'L_LAPTOP', timer_context: 'L_LAPTOP', timer_smoke: 'L_LAPTOP',
   timer_seo: 'L_LAPTOP', timer_claude_backup: 'L_LAPTOP', env_file: 'L_LAPTOP',
+  repo_cortex: 'L_LAPTOP', claude_md: 'L_LAPTOP', context_md: 'L_LAPTOP',
+  knowledge_dir: 'L_LAPTOP', venv: 'L_LAPTOP',
+  notion_map: 'L_LAPTOP', ecosystem_map: 'L_LAPTOP', apps_map: 'L_LAPTOP',
+  quotes_mazur: 'L_LAPTOP', adi_psychology: 'L_LAPTOP',
+  app_atlas: 'L_LAPTOP',
   // Vercel
   vercel: 'L_VERCEL', app_pm: 'L_VERCEL', app_zakupex: 'L_VERCEL',
   app_bot_voice: 'L_VERCEL', app_muszla: 'L_VERCEL',
@@ -385,7 +390,20 @@ const nodes = [
 const edges = [
   // ========== CORTEX EDGES ==========
   { source: 'update_context_py', target: 'context_md',      label: 'generates', v: ['cortex'] },
-  // env_file + repo_cortex "contains" edges removed — szum wizualny, info w opisach node'ów
+  // Repo Cortex — strukturalne edges (nie wszystkie skrypty, tylko główne kawałki)
+  { source: 'repo_cortex', target: 'claude_md',     label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'context_md',    label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'env_file',      label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'knowledge_dir', label: 'contains', v: ['cortex'] },
+  { source: 'repo_cortex', target: 'venv',          label: 'contains', v: ['cortex'] },
+  // Knowledge dir — zawartość
+  { source: 'knowledge_dir', target: 'notion_map',     label: 'mapa',    v: ['cortex'] },
+  { source: 'knowledge_dir', target: 'ecosystem_map',  label: 'mapa',    v: ['cortex'] },
+  { source: 'knowledge_dir', target: 'apps_map',      label: 'mapa',    v: ['cortex'] },
+  { source: 'knowledge_dir', target: 'adi_psychology', label: 'profil',  v: ['cortex'] },
+  { source: 'knowledge_dir', target: 'quotes_mazur',   label: 'cytaty',  v: ['cortex'] },
+  // Atlas — osobny repo
+  { source: 'app_atlas', target: 'laptop',  label: 'deploy',    v: ['cortex'] },
   { source: 'mcp_chrome',     target: 'laptop',          label: 'browser',  v: ['cortex'] },
   { source: 'mcp_canva',      target: 'app_muszla',      label: 'design',   v: ['cortex'] },
   { source: 'mcp_notion_ai',  target: 'notion_api_firm', label: 'proxies',  v: ['cortex'] },
