@@ -590,26 +590,36 @@ const BACKED_UP = new Set([
   'repo_gustaw', 'repo_muszla', 'repo_voice',
 ]);
 
+// HTML overlay container for backup badges (renderowane nad node'ami, poza ich bryłą)
+const badgeLayer = document.createElement('div');
+badgeLayer.style.cssText = 'position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden; z-index:5;';
+document.getElementById('cy').style.position = 'relative';
+document.getElementById('cy').appendChild(badgeLayer);
+
 function applyBackupBadges() {
+  badgeLayer.innerHTML = '';
   cy.nodes().forEach(node => {
-    if (BACKED_UP.has(node.id())) {
-      const t = TYPES[node.data('type')];
-      const isHub = node.id() === 'repo_cortex';
-      const mainIcon = isHub
-        ? `${ICON_BASE}/tabler/brain.svg?color=%233fb950`
-        : `${ICON_BASE}/${t.icon}.svg?color=%23ffffff`;
-      node.style({
-        'background-image': [mainIcon, `${ICON_BASE}/tabler/cloud-check.svg?color=%2356d364`],
-        'background-width': [isHub ? '55%' : '60%', '24%'],
-        'background-height': [isHub ? '55%' : '60%', '24%'],
-        'background-position-x': ['50%', '92%'],
-        'background-position-y': ['50%', '92%'],
-        'background-fit': ['contain', 'contain'],
-        'background-clip': ['none', 'none'],
-        'background-image-opacity': [0.9, 1],
-      });
-    }
+    if (!BACKED_UP.has(node.id())) return;
+    const pos = node.renderedPosition();
+    const w = node.renderedWidth();
+    const h = node.renderedHeight();
+    const size = Math.max(14, Math.min(22, w * 0.35));
+    // Prawy górny róg, nad node'em (offset ~60% promienia w prawo + w górę)
+    const bx = pos.x + w/2 - size*0.3;
+    const by = pos.y - h/2 - size*0.7;
+    const badge = document.createElement('div');
+    badge.style.cssText = `position:absolute; left:${bx}px; top:${by}px; width:${size}px; height:${size}px; background:#0f1117; border:1.5px solid #56d364; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,.5);`;
+    badge.innerHTML = `<img src="${ICON_BASE}/tabler/cloud-check.svg?color=%2356d364" style="width:${size*0.6}px;height:${size*0.6}px">`;
+    badge.title = 'Backup aktywny';
+    badgeLayer.appendChild(badge);
   });
+}
+
+// Re-render badges po każdym ruchu/zoomie/drag
+let badgeRaf = null;
+function scheduleBadgeUpdate() {
+  if (badgeRaf) return;
+  badgeRaf = requestAnimationFrame(() => { badgeRaf = null; applyBackupBadges(); });
 }
 
 // === LAYOUTS ===
@@ -966,12 +976,18 @@ function updateStats(view) {
 updateLegend('cortex');
 updateStats('cortex');
 
+// Badge update na każdą zmianę viewport/pozycji
+cy.on('pan zoom', scheduleBadgeUpdate);
+cy.on('position', 'node', scheduleBadgeUpdate);
+cy.on('layoutstop', scheduleBadgeUpdate);
+window.addEventListener('resize', scheduleBadgeUpdate);
+
 // Auto-focus hub node on load
 setTimeout(() => {
   applyBackupBadges();
   const hub = cy.getElementById('repo_cortex');
   if (hub.length) {
-    cy.animate({ center: { eles: hub }, zoom: 1.2 }, { duration: 800 });
+    cy.animate({ center: { eles: hub }, zoom: 1.2 }, { duration: 800, complete: scheduleBadgeUpdate });
   }
 }, 500);
 
