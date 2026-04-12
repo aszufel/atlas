@@ -118,6 +118,10 @@ const TYPES = {
   api:      { label: 'API',        color: '#58a6ff', shape: 'round-rectangle', icon: 'tabler/cloud' },
   timer:    { label: 'Timer',      color: '#d29922', shape: 'round-rectangle', icon: 'tabler/clock' },
   cron:     { label: 'Cron PHP',   color: '#db6d28', shape: 'round-rectangle', icon: 'tabler/clock-play' },
+  gcp:      { label: 'GCP',        color: '#4285f4', shape: 'round-rectangle', icon: 'tabler/cloud-cog' },
+  sched:    { label: 'Scheduler',  color: '#4285f4', shape: 'round-rectangle', icon: 'tabler/alarm' },
+  secret:   { label: 'Secret',     color: '#6f42c1', shape: 'round-rectangle', icon: 'tabler/key' },
+  bucket:   { label: 'Storage',    color: '#0ea5e9', shape: 'round-rectangle', icon: 'tabler/database' },
   mcp:      { label: 'MCP',        color: '#bc8cff', shape: 'round-rectangle', icon: 'tabler/puzzle' },
   app:      { label: 'Aplikacja',  color: '#f778ba', shape: 'round-rectangle', icon: 'tabler/app-window' },
   repo:     { label: 'Repo',       color: '#8b949e', shape: 'round-rectangle', icon: 'tabler/git-branch' },
@@ -162,7 +166,6 @@ const nodes = [
   { id: 'deploy_ftp_sh',     label: 'deploy_ftp.sh',         type: 'script', v: ['cortex'], desc: 'deploy FTP stron' },
   { id: 'update_context_py', label: 'update_context.py',     type: 'script', v: ['cortex'], desc: 'generuje context.md' },
   { id: 'smoke_test_py',     label: 'smoke_test.py',         type: 'script', v: ['cortex'], desc: 'test Notion + Gmail' },
-  { id: 'backup_py',         label: 'google_drive_backup.py',type: 'script', v: ['cortex'], desc: 'backup na Google Drive' },
   { id: 'google_admin_py',  label: 'google_admin.py',       type: 'script', v: ['cortex'], desc: 'users, groups, aliases, security, report — Google Workspace' },
   { id: 'indexing_py',      label: 'indexing.py',           type: 'script', v: ['cortex'], desc: 'submit, inspect, sitemap — Google Indexing API' },
   { id: 'check_treningi_py',label: 'check_treningi.py',     type: 'script', v: ['cortex'], desc: 'podsumowanie treningów z Notion' },
@@ -173,12 +176,7 @@ const nodes = [
   { id: 'timer_context',   label: 'cortex-context (07:00)',type: 'timer', v: ['cortex'], desc: 'systemd -> update_context.py' },
   { id: 'timer_smoke',     label: 'cortex-smoke (07:10)',  type: 'timer', v: ['cortex'], desc: 'systemd -> smoke_test.py' },
   { id: 'timer_seo',       label: 'cortex-seo (pon 07:15)',type: 'timer', v: ['cortex'], desc: 'systemd -> seo_report.py' },
-  { id: 'timer_backup',    label: 'cortex-backup (23:30)', type: 'timer', v: ['cortex'], desc: 'systemd -> backup.py' },
-
-  // Crons
-  { id: 'cron_scan',       label: 'pm-auto-scan (23:00)',  type: 'cron', v: ['cortex'], desc: 'PHP: Apify auto-scan' },
-  { id: 'cron_summary',    label: 'pm-summary (01:00)',    type: 'cron', v: ['cortex'], desc: 'PHP: OpenAI summary' },
-  { id: 'cron_retry',      label: 'pm-retry (06:00)',      type: 'cron', v: ['cortex'], desc: 'PHP: retry Apify' },
+  { id: 'timer_claude_backup', label: 'cortex-claude-backup (22:00)', type: 'timer', v: ['cortex'], desc: 'systemd -> claude_config_backup.py --gcs (fallback po EOD)' },
 
   // APIs
   { id: 'gmail_api',       label: 'Gmail API',             type: 'api', v: ['cortex'], desc: 'OAuth, email ops' },
@@ -222,16 +220,11 @@ const nodes = [
 
   // Nowe skrypty (2026-04-11)
   { id: 'gbp_py',             label: 'gbp.py',               type: 'script', v: ['cortex'], desc: 'Google Business Profile — list, open, close, hours, reviews, reply. Aliasy: muszla, indu, sunday...' },
-  { id: 'content_pipeline_py',label: 'content_pipeline.py',  type: 'script', v: ['cortex'], desc: 'Rolki + posty z podcastu Tamborskiego — Whisper, GPT-4o, ffmpeg, OpenCV' },
-  { id: 'gbp_auto_reply_py', label: 'gbp_auto_reply.py',    type: 'script', v: ['cortex'], desc: 'Auto-odpowiedzi na recenzje Google — GPT-4o-mini' },
-  { id: 'straznik_py',       label: 'straznik.py',          type: 'script', v: ['cortex'], desc: 'Health check: Janusz WA, dysk, backup, tokeny, Notion' },
-  { id: 'archiwista_sh',     label: 'archiwista.sh',        type: 'script', v: ['cortex'], desc: 'Backup PG + .env → strych.mikr.us' },
+  { id: 'content_pipeline_py',label: 'content_pipeline.py',  type: 'script', v: ['cortex'], desc: 'Rolki + posty z podcastu Tamborskiego — Whisper, GPT-4o, ffmpeg, OpenCV. Zmigrowane na GCP Cloud Run Job 2026-04-12.' },
+  { id: 'archiwista_sh',     label: 'archiwista.sh',        type: 'script', v: ['cortex'], desc: 'Backup PG + .env → strych.mikr.us + GCS' },
 
-  // Automaty Mikrusa (crony cortex)
-  { id: 'cron_archiwista',   label: 'archiwista (4:00)',     type: 'automat', v: ['cortex'], desc: '🟢 Backup PG + .env → strych.mikr.us, codziennie 4:00, retencja 30 dni' },
-  { id: 'cron_straznik',     label: 'straznik (co 1h)',      type: 'automat', v: ['cortex'], desc: '🟢 Health check: Janusz, dysk, backup, tokeny, Notion. Alert WA do Adiego.' },
-  { id: 'cron_recenzent',    label: 'recenzent (co 4h)',     type: 'automat', v: ['cortex'], desc: '🟢 Auto-odpowiedzi na recenzje Google (5 obiektow PEG). GPT-4o-mini.' },
-  { id: 'cron_content_maker',label: 'content-maker (wt 3:00)',type:'automat', v: ['cortex'], desc: '🟡 Rolki z podcastu Tamborskiego. Skrypt gotowy, deploy w toku.' },
+  // Automaty Mikrusa (tylko archiwista pozostal, reszta na GCP od 2026-04-12)
+  { id: 'cron_archiwista',   label: 'archiwista (4:00)',     type: 'automat', v: ['cortex'], desc: '🟢 Backup PG + .env → strych.mikr.us + GCS, codziennie 4:00, retencja 30 dni. JEDYNY cron na Mikrusie.' },
 
   // Nowe API
   { id: 'gbp_api',           label: 'GBP API',               type: 'api', v: ['cortex'], desc: 'Google Business Profile — wizytówki, recenzje, godziny' },
@@ -249,8 +242,32 @@ const nodes = [
 
   // Hosting
   { id: 'vercel',          label: 'Vercel',                type: 'hosting', v: ['cortex'], desc: 'PM, ZakupEX, BOT Voice, muszla.pl' },
-  { id: 'dhosting',        label: 'dhosting',              type: 'hosting', v: ['cortex'], desc: 'FTP: IND.U, Sunday, PEG, GEA + crony PHP (PM)' },
-  { id: 'mikrus',          label: 'Mikrus VPS',            type: 'hosting', v: ['cortex'], desc: 'leszek140, 1GB/10GB — Persony: Janusz (🟢), Gustaw (🔴). Automaty: archiwista, straznik, recenzent (🟢), content-maker (🟡). Backup: strych.mikr.us' },
+  { id: 'dhosting',        label: 'dhosting',              type: 'hosting', v: ['cortex'], desc: 'FTP: IND.U, Sunday, PEG, GEA. Crony PHP ZABLOKOWANE 2026-04-12 (migrowane na GCP Scheduler).' },
+  { id: 'gcp',             label: 'GCP Cortex',            type: 'gcp', v: ['cortex'], desc: 'Project ai-council-487609, region europe-central2. Budget 50zł/mies (alerty 50/90/100%). Realny koszt ~10-12zł.' },
+  { id: 'gcp_sm',          label: 'Secret Manager',        type: 'secret', v: ['cortex'], desc: '8 sekretów: notion-token-firmowe/prywatne, supabase-pm-key, supabase-zakupex-key, openai-api-key, cloudflare-api-token, cortex-api-key, google-oauth-token' },
+  { id: 'gcp_bucket',      label: 'gs://peg-backups-cortex', type: 'bucket', v: ['cortex'], desc: 'Bucket GCS, lifecycle 30 dni. Foldery: notion/, supabase/, cloudflare/, claude-config/, mikrus/' },
+  { id: 'gcp_ar',          label: 'Artifact Registry',     type: 'gcp', v: ['cortex'], desc: 'cortex-jobs/ — Docker images dla Cloud Run Jobs' },
+  { id: 'gcp_uptime',      label: 'Uptime Check + Alert',  type: 'gcp', v: ['cortex'], desc: 'janusz-mikrus-health co 5min → /health. Alert email: Janusz DOWN po 60s.' },
+
+  // GCP Cloud Run Functions (4)
+  { id: 'cr_notion_backup', label: 'notion-backup',        type: 'gcp', v: ['cortex'], desc: 'Cloud Run Function — 28 baz Notion → GCS' },
+  { id: 'cr_supabase_backup', label: 'supabase-backup',    type: 'gcp', v: ['cortex'], desc: 'Cloud Run Function — PM + ZakupEX → GCS' },
+  { id: 'cr_cloudflare_backup', label: 'cloudflare-backup',type: 'gcp', v: ['cortex'], desc: 'Cloud Run Function — 6 zon CF → GCS' },
+  { id: 'cr_recenzent',    label: 'recenzent',             type: 'gcp', v: ['cortex'], desc: 'Cloud Run Function — Auto-odpowiedzi na recenzje GBP (5 obiektow PEG). GPT-4o-mini.' },
+
+  // GCP Cloud Run Job
+  { id: 'cr_content',      label: 'content-pipeline',      type: 'gcp', v: ['cortex'], desc: 'Cloud Run Job (Docker+ffmpeg+yt-dlp+opencv) — rolki podcast Tamborskiego' },
+
+  // GCP Schedulers (8)
+  { id: 'sch_notion',      label: 'notion-backup (4:00)',  type: 'sched', v: ['cortex'], desc: 'codziennie 4:00 → CR notion-backup' },
+  { id: 'sch_supabase',    label: 'supabase-backup (4:30)',type: 'sched', v: ['cortex'], desc: 'codziennie 4:30 → CR supabase-backup' },
+  { id: 'sch_cf',          label: 'cloudflare-backup (5:00)',type: 'sched', v: ['cortex'], desc: 'codziennie 5:00 → CR cloudflare-backup' },
+  { id: 'sch_recenzent',   label: 'recenzent (co 4h)',     type: 'sched', v: ['cortex'], desc: 'co 4h → CR recenzent' },
+  { id: 'sch_content',     label: 'content-pipeline (wt 3:00)',type: 'sched', v: ['cortex'], desc: 'wtorek 3:00 → CR Job content-pipeline' },
+  { id: 'sch_pm_scan',     label: 'pm-auto-scan (23:00)',  type: 'sched', v: ['cortex'], desc: 'codziennie 23:00 → GET price.partnerexpert.work/api/cron/auto-scan' },
+  { id: 'sch_pm_summary',  label: 'pm-summary (01:00)',    type: 'sched', v: ['cortex'], desc: 'codziennie 01:00 → GET .../generate-summary' },
+  { id: 'sch_pm_retry',    label: 'pm-retry (06:00)',      type: 'sched', v: ['cortex'], desc: 'codziennie 06:00 → GET .../retry-apify-runs' },
+  { id: 'mikrus',          label: 'Mikrus VPS',            type: 'hosting', v: ['cortex'], desc: 'leszek140, 1GB/10GB — Persony: Janusz (🟢), Gustaw (🔴). Jedyny automat: archiwista (4:00). Wszystkie inne crony migrowane na GCP 2026-04-12.' },
   { id: 'laptop',          label: 'Laptop (penguin)',       type: 'hosting', v: ['cortex'], desc: 'systemd timers, Cortex runtime — NIGDY crony produkcyjne' },
 
   // ========== BIZNESY VIEW ==========
@@ -321,7 +338,6 @@ const edges = [
   { source: 'env_file',          target: 'cloudflare_py',   label: 'tokens',    v: ['cortex'] },
   { source: 'env_file',          target: 'fireflies_py',    label: 'tokens',    v: ['cortex'] },
   { source: 'env_file',          target: 'google_ads_py',   label: 'tokens',    v: ['cortex'] },
-  { source: 'env_file',          target: 'backup_py',       label: 'tokens',    v: ['cortex'] },
   { source: 'knowledge_dir',     target: 'notion_map',      label: 'contains',  v: ['cortex'] },
   { source: 'knowledge_dir',     target: 'ecosystem_map',   label: 'contains',  v: ['cortex'] },
   { source: 'knowledge_dir',     target: 'apps_map',        label: 'contains',  v: ['cortex'] },
@@ -340,7 +356,6 @@ const edges = [
   { source: 'repo_cortex', target: 'deploy_ftp_sh',      label: 'contains', v: ['cortex'] },
   { source: 'repo_cortex', target: 'update_context_py',  label: 'contains', v: ['cortex'] },
   { source: 'repo_cortex', target: 'smoke_test_py',      label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'backup_py',          label: 'contains', v: ['cortex'] },
   { source: 'repo_cortex', target: 'notion2email_py',    label: 'contains', v: ['cortex'] },
   { source: 'repo_cortex', target: 'claude_md',          label: 'contains', v: ['cortex'] },
   { source: 'repo_cortex', target: 'context_md',         label: 'contains', v: ['cortex'] },
@@ -377,7 +392,6 @@ const edges = [
   { source: 'update_context_py', target: 'calendar_api',    label: 'events',      v: ['cortex'] },
   { source: 'smoke_test_py',     target: 'notion_api_firm', label: 'test',        v: ['cortex'] },
   { source: 'smoke_test_py',     target: 'gmail_api',       label: 'test',        v: ['cortex'] },
-  { source: 'backup_py',         target: 'gdrive_api',      label: 'upload',      v: ['cortex'] },
   { source: 'google_admin_py',  target: 'google_admin_api',label: 'SDK',         v: ['cortex'] },
   { source: 'indexing_py',      target: 'indexing_api',    label: 'submit',      v: ['cortex'] },
   { source: 'repo_cortex', target: 'google_admin_py',  label: 'contains', v: ['cortex'] },
@@ -392,12 +406,7 @@ const edges = [
   { source: 'timer_context', target: 'update_context_py', label: 'triggers', v: ['cortex'] },
   { source: 'timer_smoke',   target: 'smoke_test_py',     label: 'triggers', v: ['cortex'] },
   { source: 'timer_seo',     target: 'seo_report_py',     label: 'triggers', v: ['cortex'] },
-  { source: 'timer_backup',  target: 'backup_py',         label: 'triggers', v: ['cortex'] },
-  { source: 'cron_scan',    target: 'apify',      label: 'scraping',   v: ['cortex'] },
-  { source: 'cron_scan',    target: 'supabase',   label: 'write',      v: ['cortex'] },
-  { source: 'cron_summary', target: 'openai_api', label: 'GPT',        v: ['cortex'] },
-  { source: 'cron_summary', target: 'supabase',   label: 'read/write', v: ['cortex'] },
-  { source: 'cron_retry',   target: 'apify',      label: 'retry',      v: ['cortex'] },
+  { source: 'timer_claude_backup', target: 'gcp_bucket', label: 'upload ~/.claude/', v: ['cortex'] },
   { source: 'mcp_notion_firm', target: 'notion_api_firm', label: 'proxies', v: ['cortex'] },
   { source: 'mcp_notion_priv', target: 'notion_api_priv', label: 'proxies', v: ['cortex'] },
   { source: 'mcp_gmail',       target: 'gmail_api',       label: 'proxies', v: ['cortex'] },
@@ -426,50 +435,72 @@ const edges = [
   { source: 'laptop', target: 'timer_context', label: 'runs', v: ['cortex'] },
   { source: 'laptop', target: 'timer_smoke',   label: 'runs', v: ['cortex'] },
   { source: 'laptop', target: 'timer_seo',     label: 'runs', v: ['cortex'] },
-  { source: 'laptop', target: 'timer_backup',  label: 'runs', v: ['cortex'] },
-  { source: 'dhosting', target: 'cron_scan',    label: 'runs', v: ['cortex'] },
-  { source: 'dhosting', target: 'cron_summary', label: 'runs', v: ['cortex'] },
-  { source: 'dhosting', target: 'cron_retry',   label: 'runs', v: ['cortex'] },
+  { source: 'laptop', target: 'timer_claude_backup', label: 'runs', v: ['cortex'] },
 
   // Nowe skrypty → repo
   { source: 'repo_cortex', target: 'gbp_py',              label: 'contains', v: ['cortex'] },
   { source: 'repo_cortex', target: 'content_pipeline_py', label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'gbp_auto_reply_py',   label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'straznik_py',         label: 'contains', v: ['cortex'] },
   { source: 'repo_cortex', target: 'archiwista_sh',       label: 'contains', v: ['cortex'] },
-  // Nowe skrypty → API
   { source: 'gbp_py',             target: 'gbp_api',       label: 'OAuth',      v: ['cortex'] },
-  { source: 'gbp_auto_reply_py',  target: 'gbp_api',       label: 'reviews',    v: ['cortex'] },
-  { source: 'gbp_auto_reply_py',  target: 'openai_api',    label: 'GPT reply',  v: ['cortex'] },
   { source: 'content_pipeline_py',target: 'openai_api',     label: 'Whisper+GPT',v: ['cortex'] },
   { source: 'content_pipeline_py',target: 'fb_api',         label: 'publish',    v: ['cortex'] },
-  { source: 'straznik_py',        target: 'notion_api_firm',label: 'ping',       v: ['cortex'] },
   { source: 'check_treningi_py', target: 'notion_api_priv',label: 'read',       v: ['cortex'] },
   { source: 'update_supl_py',    target: 'notion_api_priv',label: 'write',      v: ['cortex'] },
   { source: 'notion_replace_py', target: 'notion_api_firm',label: 'replace',    v: ['cortex'] },
   { source: 'seo_report_py',     target: 'gsc_api',        label: 'positions',  v: ['cortex'] },
   { source: 'seo_report_py',     target: 'ga4_api',        label: 'analytics',  v: ['cortex'] },
   { source: 'app_muszla',        target: 'biz_muszla',     label: 'strona WWW', v: ['biznesy'] },
-  { source: 'straznik_py',        target: 'app_janusz',     label: 'health',     v: ['cortex'] },
   { source: 'env_file',           target: 'gbp_py',         label: 'tokens',     v: ['cortex'] },
-  { source: 'env_file',           target: 'content_pipeline_py', label: 'tokens', v: ['cortex'] },
-  // Automaty → skrypty
-  { source: 'cron_archiwista',    target: 'archiwista_sh',       label: 'triggers', v: ['cortex'] },
-  { source: 'cron_straznik',      target: 'straznik_py',         label: 'triggers', v: ['cortex'] },
-  { source: 'cron_recenzent',     target: 'gbp_auto_reply_py',   label: 'triggers', v: ['cortex'] },
-  { source: 'cron_content_maker', target: 'content_pipeline_py', label: 'triggers', v: ['cortex'] },
-  // Automaty → Mikrus
-  { source: 'mikrus', target: 'cron_archiwista',    label: 'cron', v: ['cortex'] },
-  { source: 'mikrus', target: 'cron_straznik',      label: 'cron', v: ['cortex'] },
-  { source: 'mikrus', target: 'cron_recenzent',     label: 'cron', v: ['cortex'] },
-  { source: 'mikrus', target: 'cron_content_maker', label: 'cron', v: ['cortex'] },
-  // Backup → strych
-  { source: 'archiwista_sh', target: 'strych',   label: 'backup',  v: ['cortex'] },
-  { source: 'archiwista_sh', target: 'mikrus_pg',label: 'pg_dump', v: ['cortex'] },
-  // Straznik alert → Janusz API
-  { source: 'straznik_py',   target: 'app_janusz', label: 'alert WA', v: ['cortex'] },
-  // Recenzent alert → Janusz API
-  { source: 'gbp_auto_reply_py', target: 'app_janusz', label: 'raport WA', v: ['cortex'] },
+  // Archiwista (jedyny cron na Mikrusie)
+  { source: 'cron_archiwista',    target: 'archiwista_sh',    label: 'triggers', v: ['cortex'] },
+  { source: 'mikrus', target: 'cron_archiwista', label: 'cron', v: ['cortex'] },
+  { source: 'archiwista_sh', target: 'strych',     label: 'backup',  v: ['cortex'] },
+  { source: 'archiwista_sh', target: 'gcp_bucket', label: 'backup 2/2', v: ['cortex'] },
+  { source: 'archiwista_sh', target: 'mikrus_pg',  label: 'pg_dump', v: ['cortex'] },
+  // Persony → Mikrus
+  { source: 'app_gustaw', target: 'mikrus', label: 'deploy', v: ['cortex'] },
+  // GCP — struktura
+  { source: 'gcp', target: 'gcp_sm',     label: 'has', v: ['cortex'] },
+  { source: 'gcp', target: 'gcp_bucket', label: 'has', v: ['cortex'] },
+  { source: 'gcp', target: 'gcp_ar',     label: 'has', v: ['cortex'] },
+  { source: 'gcp', target: 'gcp_uptime', label: 'has', v: ['cortex'] },
+  { source: 'gcp', target: 'cr_notion_backup',    label: 'runs', v: ['cortex'] },
+  { source: 'gcp', target: 'cr_supabase_backup',  label: 'runs', v: ['cortex'] },
+  { source: 'gcp', target: 'cr_cloudflare_backup',label: 'runs', v: ['cortex'] },
+  { source: 'gcp', target: 'cr_recenzent',        label: 'runs', v: ['cortex'] },
+  { source: 'gcp', target: 'cr_content',          label: 'runs Job', v: ['cortex'] },
+  // Schedulery → CR
+  { source: 'sch_notion',     target: 'cr_notion_backup',    label: 'triggers', v: ['cortex'] },
+  { source: 'sch_supabase',   target: 'cr_supabase_backup',  label: 'triggers', v: ['cortex'] },
+  { source: 'sch_cf',         target: 'cr_cloudflare_backup',label: 'triggers', v: ['cortex'] },
+  { source: 'sch_recenzent',  target: 'cr_recenzent',        label: 'triggers', v: ['cortex'] },
+  { source: 'sch_content',    target: 'cr_content',          label: 'triggers', v: ['cortex'] },
+  { source: 'sch_pm_scan',    target: 'app_pm',              label: 'HTTP GET', v: ['cortex'] },
+  { source: 'sch_pm_summary', target: 'app_pm',              label: 'HTTP GET', v: ['cortex'] },
+  { source: 'sch_pm_retry',   target: 'app_pm',              label: 'HTTP GET', v: ['cortex'] },
+  // GCP → secret consumers
+  { source: 'gcp_sm', target: 'cr_notion_backup',     label: 'secrets', v: ['cortex'] },
+  { source: 'gcp_sm', target: 'cr_supabase_backup',   label: 'secrets', v: ['cortex'] },
+  { source: 'gcp_sm', target: 'cr_cloudflare_backup', label: 'secrets', v: ['cortex'] },
+  { source: 'gcp_sm', target: 'cr_recenzent',         label: 'secrets', v: ['cortex'] },
+  { source: 'gcp_sm', target: 'cr_content',           label: 'secrets', v: ['cortex'] },
+  // CR Functions → APIs
+  { source: 'cr_notion_backup',    target: 'notion_api_firm', label: 'backup', v: ['cortex'] },
+  { source: 'cr_notion_backup',    target: 'notion_api_priv', label: 'backup', v: ['cortex'] },
+  { source: 'cr_notion_backup',    target: 'gcp_bucket',      label: 'write',  v: ['cortex'] },
+  { source: 'cr_supabase_backup',  target: 'supabase',        label: 'dump',   v: ['cortex'] },
+  { source: 'cr_supabase_backup',  target: 'gcp_bucket',      label: 'write',  v: ['cortex'] },
+  { source: 'cr_cloudflare_backup',target: 'cloudflare_api',  label: 'dump',   v: ['cortex'] },
+  { source: 'cr_cloudflare_backup',target: 'gcp_bucket',      label: 'write',  v: ['cortex'] },
+  { source: 'cr_recenzent',        target: 'gbp_api',         label: 'reviews',v: ['cortex'] },
+  { source: 'cr_recenzent',        target: 'openai_api',      label: 'GPT reply', v: ['cortex'] },
+  { source: 'cr_recenzent',        target: 'app_janusz',      label: 'raport WA', v: ['cortex'] },
+  { source: 'cr_content',          target: 'openai_api',      label: 'Whisper+GPT', v: ['cortex'] },
+  { source: 'cr_content',          target: 'gdrive_api',      label: 'rolki Shared Drive', v: ['cortex'] },
+  { source: 'cr_content',          target: 'notion_api_firm', label: 'Social Planner', v: ['cortex'] },
+  { source: 'cr_content',          target: 'gcp_ar',          label: 'image',  v: ['cortex'] },
+  // Uptime monitoring
+  { source: 'gcp_uptime', target: 'app_janusz', label: 'health check', v: ['cortex'] },
   // Persony → Mikrus
   { source: 'app_gustaw', target: 'mikrus', label: 'deploy', v: ['cortex'] },
 
