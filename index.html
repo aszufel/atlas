@@ -101,6 +101,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div class="search-box">
     <input type="text" id="search" placeholder="Szukaj... ( / )">
   </div>
+  <button id="btn-export" title="Zapisz jako PNG" style="padding:6px 12px;background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:6px;cursor:pointer;font-size:12px">📷 PNG</button>
+  <span id="updated-ts" style="font-size:11px;color:#484f58;margin-left:auto">updated: 2026-04-12</span>
 </div>
 
 <div class="main">
@@ -137,6 +139,12 @@ const TYPES = {
   punkt:    { label: 'Punkt',      color: '#ffa657', shape: 'round-rectangle', icon: 'tabler/map-pin' },
   strategia:{ label: 'Strategia',  color: '#7ee787', shape: 'round-rectangle', icon: 'tabler/chess-knight' },
   pracownik:{ label: 'Pracownik',  color: '#79c0ff', shape: 'ellipse',         icon: 'tabler/user' },
+  person_zarzad:    { label: 'Zarząd',      color: '#f0e68c', shape: 'ellipse', icon: 'tabler/crown' },
+  person_management:{ label: 'Management',  color: '#f85149', shape: 'ellipse', icon: 'tabler/briefcase' },
+  person_kierownicy:{ label: 'Kierownicy',  color: '#3fb950', shape: 'ellipse', icon: 'tabler/user-star' },
+  person_specjalisci:{label: 'Specjaliści', color: '#d29922', shape: 'ellipse', icon: 'tabler/user-check' },
+  person_pracownik_liniowy:{label:'Liniowy',color: '#79c0ff', shape: 'ellipse', icon: 'tabler/user' },
+  group:    { label: 'Grupa',      color: '#21262d', shape: 'round-rectangle', icon: '' },
   layer:    { label: 'Warstwa',    color: '#21262d', shape: 'round-rectangle', icon: '' },
 };
 
@@ -331,71 +339,53 @@ const nodes = [
   { id: 'str_celka',   label: 'CELKA 500 APT',      type: 'strategia', v: ['biznesy'], desc: 'Pauza' },
   { id: 'str_p50',     label: 'P50',                type: 'strategia', v: ['biznesy'], desc: 'Pauza' },
 
-  // ========== ZESPOL VIEW (pracownicy aktywni) ==========
-  { id: 'p_adi',        label: 'Adrian Szufel',          type: 'pracownik', v: ['zespol'], desc: 'CEO, założyciel PEG' },
-  { id: 'p_oliver',     label: 'Oliver Andrzejczuk',     type: 'pracownik', v: ['zespol'], desc: 'VP Operations, CO Owner' },
-  { id: 'p_kamila',     label: 'Kamila Szczutkowska',    type: 'pracownik', v: ['zespol'], desc: 'Finanse / księgowość' },
-  { id: 'p_paula',      label: 'Paula Rzyzewska-Korzen', type: 'pracownik', v: ['zespol'], desc: 'Administracja / sekretariat' },
-  { id: 'p_maja',        label: 'Maja Limanska',          type: 'pracownik', v: ['zespol'], desc: 'Project Manager' },
-  { id: 'p_patrycja',   label: 'Patrycja Furmankiewicz', type: 'pracownik', v: ['zespol'], desc: 'Dyrektor Operacyjny PEO' },
-  { id: 'p_ula',        label: 'Urszula Kokoszczyk',     type: 'pracownik', v: ['zespol'], desc: 'Dyrektor Muszla Koncertowa' },
-  { id: 'p_mateusz_k',  label: 'Mateusz Kasprzak',       type: 'pracownik', v: ['zespol'], desc: 'PEO' },
-  { id: 'p_dorota_k',   label: 'Dorota Kornas',          type: 'pracownik', v: ['zespol'], desc: 'PEO' },
-  { id: 'p_beata',      label: 'Beata Kasprzak',         type: 'pracownik', v: ['zespol'], desc: 'PEO' },
-  { id: 'p_daria',      label: 'Daria Cieslak',          type: 'pracownik', v: ['zespol'], desc: 'PEO — Spot' },
-  { id: 'p_katarzyna',  label: 'Katarzyna Matyjaszczyk', type: 'pracownik', v: ['zespol'], desc: 'PEO — Spot' },
-  { id: 'p_bartosz_p',  label: 'Bartosz Pietrasiak',     type: 'pracownik', v: ['zespol'], desc: 'B2B, elektryk' },
-  { id: 'p_tomasz',     label: 'Tomasz Ciecwierski',     type: 'pracownik', v: ['zespol'], desc: 'PER' },
-  { id: 'p_dorota_b',   label: 'Buchuta Dorota',         type: 'pracownik', v: ['zespol'], desc: 'PER — Sunset' },
-  { id: 'p_tetiana',    label: 'Tetiana Poklad',         type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
-  { id: 'p_bogdan',     label: 'Bogdan Belej',           type: 'pracownik', v: ['zespol'], desc: 'PER' },
-  { id: 'p_irmina',     label: 'Irmina Andrzejczuk',     type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
-  { id: 'p_krzysztof_s',label: 'Krzysztof Seralis',      type: 'pracownik', v: ['zespol'], desc: 'PER — Muszla' },
-  { id: 'p_julia',      label: 'Julia Malecka',          type: 'pracownik', v: ['zespol'], desc: 'PER — Muszla' },
-  { id: 'p_kamil_k',    label: 'Kamil Kaleta',           type: 'pracownik', v: ['zespol'], desc: 'PER — Muszla' },
-  { id: 'p_patrycja_k', label: 'Patrycja Kozbial',       type: 'pracownik', v: ['zespol'], desc: 'PER — Muszla' },
-  { id: 'p_anastasiia', label: 'Anastasiia Makedonska',  type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
-  { id: 'p_vasyl',      label: 'Vasyl Kharskyy',         type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
-  { id: 'p_oliwia',     label: 'Oliwia Wojcik',          type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
-  { id: 'p_iryna_s',    label: 'Iryna Shestakowa',       type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
-  { id: 'p_tadeusz',    label: 'Tadeusz Zaborowski',     type: 'pracownik', v: ['zespol'], desc: 'PER' },
-  { id: 'p_krystian',   label: 'Krystian Gaik',          type: 'pracownik', v: ['zespol'], desc: 'B2B, zewnetrzny' },
-  { id: 'p_viktoria',   label: 'Viktoria Kulchytska',    type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
-  { id: 'p_inna',       label: 'Inna Kvasnikowa',        type: 'pracownik', v: ['zespol'], desc: 'PER — Beach Box' },
+  // ========== ZESPÓŁ VIEW (auto-generated from Notion 2026-04-12) ==========
+  // Grupy per punkt/spółka (compound containers)
+  { id: 'grp_beachbox', label: 'Beach Box (8)', type: 'group', v: ['zespol'], desc: 'Beach Box — 8 aktywnych pracowników' },
+  { id: 'grp_indu', label: 'IND.U (5)', type: 'group', v: ['zespol'], desc: 'IND.U — 5 aktywnych pracowników' },
+  { id: 'grp_lobbybarspot', label: 'Lobby Bar / Spot (2)', type: 'group', v: ['zespol'], desc: 'Lobby Bar / Spot — 2 aktywnych pracowników' },
+  { id: 'grp_muszla', label: 'Muszla (5)', type: 'group', v: ['zespol'], desc: 'Muszla — 5 aktywnych pracowników' },
+  { id: 'grp_pei', label: 'PEI (3)', type: 'group', v: ['zespol'], desc: 'PEI — 3 aktywnych pracowników (holding/zarząd)' },
+  { id: 'grp_per', label: 'PER cross-venue (5)', type: 'group', v: ['zespol'], desc: 'PER — 5 techników cross-venue' },
+  { id: 'grp_sunday', label: 'Sunday (1)', type: 'group', v: ['zespol'], desc: 'Sunday — 1 aktywny pracownik' },
+  { id: 'grp_sunset', label: 'Sunset (1)', type: 'group', v: ['zespol'], desc: 'Sunset — 1 aktywny pracownik' },
+  // Pracownicy aktywni
+  { id: 'p_adrianszufel', label: 'Adrian Szufel', type: 'person_zarzad', v: ['zespol'], desc: 'Członek zarządu | Zarząd | szufel@partnerexpert.pl', parent: 'grp_pei' },
+  { id: 'p_irminaandrzejczuk', label: 'Irmina Andrzejczuk', type: 'person_zarzad', v: ['zespol'], desc: 'Dyrektor Zarządzający PER | Zarząd | irmina.andrzejczuk@partnerexpert.pl', parent: 'grp_beachbox' },
+  { id: 'p_oliverandrzejczuk', label: 'Oliver Andrzejczuk', type: 'person_zarzad', v: ['zespol'], desc: 'Członek zarządu | Zarząd | andrzejczuk@partnerexpert.pl', parent: 'grp_pei' },
+  { id: 'p_patrycjafurmankiewic', label: 'Patrycja Furmankiewicz', type: 'person_zarzad', v: ['zespol'], desc: 'Dyrektor Operacyjny PEO | Zarząd | furmankiewicz@partnerexpert.pl', parent: 'grp_indu' },
+  { id: 'p_urszulakokoszczyk', label: 'Urszula Kokoszczyk', type: 'person_zarzad', v: ['zespol'], desc: 'Dyrektor Muszla Koncertowa | Zarząd | kokoszczyk@partnerexpert.pl', parent: 'grp_muszla' },
+  { id: 'p_kamilaszczutkowska', label: 'Kamila Szczutkowska', type: 'person_management', v: ['zespol'], desc: 'Manager ds. Finansowych | Management | szczutkowska@partnerexpert.pl', parent: 'grp_pei' },
+  { id: 'p_majalimanska', label: 'Maja Limańska', type: 'person_management', v: ['zespol'], desc: 'Project Manager PEO | Management | limanska@partnerexpert.pl', parent: 'grp_sunday' },
+  { id: 'p_beatakasprzak', label: 'Beata Kasprzak', type: 'person_kierownicy', v: ['zespol'], desc: 'House Keeping Manager | Kierownicy', parent: 'grp_indu' },
+  { id: 'p_buchutadorota', label: 'Buchuta Dorota', type: 'person_kierownicy', v: ['zespol'], desc: 'Kierownik baru | Kierownicy | buchuta@partnerexpert.pl', parent: 'grp_sunset' },
+  { id: 'p_oliwiawojcik', label: 'Oliwia Wójcik', type: 'person_kierownicy', v: ['zespol'], desc: 'Kierownik baru | Kierownicy', parent: 'grp_beachbox' },
+  { id: 'p_patrycjakozbial', label: 'Patrycja Koźbiał', type: 'person_kierownicy', v: ['zespol'], desc: 'Kierownik baru | Kierownicy', parent: 'grp_muszla' },
+  { id: 'p_dorotakornas', label: 'Dorota Kornas', type: 'person_specjalisci', v: ['zespol'], desc: 'Koordynator ds. Wynajmu Apartamentów | Specjaliści | kornas@partnerexpert.pl', parent: 'grp_indu' },
+  { id: 'p_anastasiiamakedonska', label: 'Anastasiia Makedonska', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik baru | Liniowy', parent: 'grp_beachbox' },
+  { id: 'p_bartoszpietrasiak', label: 'Bartosz Pietrasiak', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Elektryk B2B | Liniowy', parent: 'grp_per' },
+  { id: 'p_bogdanbelej', label: 'Bogdan Bełej', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik techniczny | Liniowy', parent: 'grp_per' },
+  { id: 'p_dariacieslak', label: 'Daria Cieślak', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik kuchnia | Liniowy', parent: 'grp_lobbybarspot' },
+  { id: 'p_innakvasnikowa', label: 'Inna Kvasnikowa', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik kuchnia | Liniowy', parent: 'grp_beachbox' },
+  { id: 'p_irynashestakowa', label: 'Iryna Shestakowa', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik kuchnia | Liniowy', parent: 'grp_beachbox' },
+  { id: 'p_juliamalecka', label: 'Julia Małecka', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik baru | Liniowy', parent: 'grp_muszla' },
+  { id: 'p_kaletakamil', label: 'Kamil Kaleta', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik kuchnia | Liniowy', parent: 'grp_muszla' },
+  { id: 'p_katarzynamatyjaszczy', label: 'Katarzyna Matyjaszczyk', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik kuchnia | Liniowy', parent: 'grp_lobbybarspot' },
+  { id: 'p_krystiangaik', label: 'Krystian Gaik', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'B2B, zewnętrzny (~70% PEG) | Liniowy', parent: 'grp_per' },
+  { id: 'p_krzysztofseralis', label: 'Krzysztof Seralis', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik kuchnia | Liniowy', parent: 'grp_muszla' },
+  { id: 'p_mateuszkasprzak', label: 'Mateusz Kasprzak', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik techniczny | Liniowy', parent: 'grp_indu' },
+  { id: 'p_paularyzewskakorzen', label: 'Paula Ryżewska-Korzeń', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Asystentka Sekretariatu | Liniowy | ryzewska-korzen@partnerexpert.pl', parent: 'grp_indu' },
+  { id: 'p_tadeuszzaborowski', label: 'Tadeusz Zaborowski', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik techniczny | Liniowy', parent: 'grp_per' },
+  { id: 'p_tetianapoklad', label: 'Tetiana Poklad', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik kuchnia | Liniowy', parent: 'grp_beachbox' },
+  { id: 'p_tomaszciecwierski', label: 'Tomasz Ciećwierski', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik techniczny | Liniowy', parent: 'grp_per' },
+  { id: 'p_vasylkharskyy', label: 'Vasyl Kharskyy', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Stróż | Liniowy', parent: 'grp_beachbox' },
+  { id: 'p_viktoriakulchytskavo', label: 'Viktoria Kulchytska-Vouchko', type: 'person_pracownik_liniowy', v: ['zespol'], desc: 'Pracownik baru | Liniowy', parent: 'grp_beachbox' },
 ];
 
 const edges = [
   // ========== CORTEX EDGES ==========
   { source: 'update_context_py', target: 'context_md',      label: 'generates', v: ['cortex'] },
-  { source: 'env_file',          target: 'gmail_py',        label: 'tokens',    v: ['cortex'] },
-  { source: 'env_file',          target: 'notion_py',       label: 'tokens',    v: ['cortex'] },
-  { source: 'env_file',          target: 'cloudflare_py',   label: 'tokens',    v: ['cortex'] },
-  { source: 'env_file',          target: 'fireflies_py',    label: 'tokens',    v: ['cortex'] },
-  { source: 'env_file',          target: 'google_ads_py',   label: 'tokens',    v: ['cortex'] },
-  { source: 'knowledge_dir',     target: 'notion_map',      label: 'contains',  v: ['cortex'] },
-  { source: 'knowledge_dir',     target: 'ecosystem_map',   label: 'contains',  v: ['cortex'] },
-  { source: 'knowledge_dir',     target: 'apps_map',        label: 'contains',  v: ['cortex'] },
-  { source: 'knowledge_dir',     target: 'quotes_mazur',    label: 'contains',  v: ['cortex'] },
-  { source: 'knowledge_dir',     target: 'adi_psychology',  label: 'contains',  v: ['cortex'] },
-  { source: 'repo_cortex', target: 'gmail_py',           label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'notion_py',          label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'calendar_py',        label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'cloudflare_py',      label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'seo_report_py',      label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'health_check_py',    label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'fireflies_py',       label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'google_ads_py',      label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'ga4_py',             label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'search_console_py',  label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'deploy_ftp_sh',      label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'update_context_py',  label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'smoke_test_py',      label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'notion2email_py',    label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'claude_md',          label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'context_md',         label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'env_file',           label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'knowledge_dir',      label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'venv',               label: 'contains', v: ['cortex'] },
+  // env_file + repo_cortex "contains" edges removed — szum wizualny, info w opisach node'ów
   { source: 'mcp_chrome',     target: 'laptop',          label: 'browser',  v: ['cortex'] },
   { source: 'mcp_canva',      target: 'app_muszla',      label: 'design',   v: ['cortex'] },
   { source: 'mcp_notion_ai',  target: 'notion_api_firm', label: 'proxies',  v: ['cortex'] },
@@ -428,12 +418,6 @@ const edges = [
   { source: 'smoke_test_py',     target: 'gmail_api',       label: 'test',        v: ['cortex'] },
   { source: 'google_admin_py',  target: 'google_admin_api',label: 'SDK',         v: ['cortex'] },
   { source: 'indexing_py',      target: 'indexing_api',    label: 'submit',      v: ['cortex'] },
-  { source: 'repo_cortex', target: 'google_admin_py',  label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'indexing_py',      label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'check_treningi_py',label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'notion_replace_py',label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'update_supl_py',   label: 'contains', v: ['cortex'] },
-  { source: 'env_file',    target: 'google_admin_py',  label: 'tokens',   v: ['cortex'] },
   { source: 'app_janusz',  target: 'mikrus',           label: 'deploy',   v: ['cortex'] },
   { source: 'repo_gustaw', target: 'app_gustaw',       label: 'builds',   v: ['cortex'] },
   { source: 'app_bot_voice', target: 'vercel',         label: 'deploy',   v: ['cortex'] },
@@ -472,9 +456,6 @@ const edges = [
   { source: 'laptop', target: 'timer_claude_backup', label: 'runs', v: ['cortex'] },
 
   // Nowe skrypty → repo
-  { source: 'repo_cortex', target: 'gbp_py',              label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'content_pipeline_py', label: 'contains', v: ['cortex'] },
-  { source: 'repo_cortex', target: 'archiwista_sh',       label: 'contains', v: ['cortex'] },
   { source: 'gbp_py',             target: 'gbp_api',       label: 'OAuth',      v: ['cortex'] },
   { source: 'content_pipeline_py',target: 'openai_api',     label: 'Whisper+GPT',v: ['cortex'] },
   { source: 'content_pipeline_py',target: 'fb_api',         label: 'publish',    v: ['cortex'] },
@@ -484,7 +465,6 @@ const edges = [
   { source: 'seo_report_py',     target: 'gsc_api',        label: 'positions',  v: ['cortex'] },
   { source: 'seo_report_py',     target: 'ga4_api',        label: 'analytics',  v: ['cortex'] },
   { source: 'app_muszla',        target: 'biz_muszla',     label: 'strona WWW', v: ['biznesy'] },
-  { source: 'env_file',           target: 'gbp_py',         label: 'tokens',     v: ['cortex'] },
   // Archiwista (jedyny cron na Mikrusie)
   { source: 'cron_archiwista',    target: 'archiwista_sh',    label: 'triggers', v: ['cortex'] },
   { source: 'mikrus', target: 'cron_archiwista', label: 'cron', v: ['cortex'] },
@@ -561,68 +541,8 @@ const edges = [
   { source: 'biz_pei', target: 'str_celka',    label: 'pauza',      v: ['biznesy'] },
   { source: 'biz_pei', target: 'str_p50',      label: 'pauza',      v: ['biznesy'] },
 
-  // ========== ZESPOL EDGES (pracownik -> punkt) ==========
-  { source: 'p_adi',        target: 'biz_peg',     label: 'CEO',    v: ['zespol'] },
-  { source: 'p_oliver',     target: 'biz_peg',     label: 'VP Ops', v: ['zespol'] },
-  { source: 'p_kamila',     target: 'biz_peg',     label: 'finanse',v: ['zespol'] },
-  { source: 'p_paula',      target: 'biz_peo',     label: 'admin',  v: ['zespol'] },
-  { source: 'p_paula',      target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_paula',      target: 'biz_pei',     label: '',       v: ['zespol'] },
-  { source: 'p_paula',      target: 'biz_indu',    label: '',       v: ['zespol'] },
-  { source: 'p_maja',       target: 'biz_peo',     label: 'PM',     v: ['zespol'] },
-  { source: 'p_maja',       target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_maja',       target: 'biz_indu',    label: '',       v: ['zespol'] },
-  { source: 'p_maja',       target: 'biz_sunday',  label: '',       v: ['zespol'] },
-  { source: 'p_patrycja',   target: 'biz_peo',     label: 'dyr. op.',v: ['zespol'] },
-  { source: 'p_patrycja',   target: 'biz_indu',    label: '',       v: ['zespol'] },
-  { source: 'p_patrycja',   target: 'biz_sunday',  label: '',       v: ['zespol'] },
-  { source: 'p_ula',        target: 'biz_muszla',  label: 'dyrektor',v: ['zespol'] },
-  { source: 'p_ula',        target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_mateusz_k',  target: 'biz_peo',     label: '',       v: ['zespol'] },
-  { source: 'p_mateusz_k',  target: 'biz_indu',    label: '',       v: ['zespol'] },
-  { source: 'p_mateusz_k',  target: 'biz_sunday',  label: '',       v: ['zespol'] },
-  { source: 'p_dorota_k',   target: 'biz_peo',     label: '',       v: ['zespol'] },
-  { source: 'p_dorota_k',   target: 'biz_indu',    label: '',       v: ['zespol'] },
-  { source: 'p_dorota_k',   target: 'biz_sunday',  label: '',       v: ['zespol'] },
-  { source: 'p_beata',      target: 'biz_peo',     label: '',       v: ['zespol'] },
-  { source: 'p_beata',      target: 'biz_indu',    label: '',       v: ['zespol'] },
-  { source: 'p_beata',      target: 'biz_sunday',  label: '',       v: ['zespol'] },
-  { source: 'p_daria',      target: 'biz_peo',     label: '',       v: ['zespol'] },
-  { source: 'p_daria',      target: 'biz_spot',    label: '',       v: ['zespol'] },
-  { source: 'p_katarzyna',  target: 'biz_peo',     label: '',       v: ['zespol'] },
-  { source: 'p_katarzyna',  target: 'biz_spot',    label: '',       v: ['zespol'] },
-  { source: 'p_bartosz_p',  target: 'biz_per',     label: 'B2B',    v: ['zespol'] },
-  { source: 'p_bartosz_p',  target: 'biz_peo',     label: '',       v: ['zespol'] },
-  { source: 'p_tomasz',     target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_dorota_b',   target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_dorota_b',   target: 'biz_sunset',  label: '',       v: ['zespol'] },
-  { source: 'p_tetiana',    target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_tetiana',    target: 'biz_beachbox',label: '',       v: ['zespol'] },
-  { source: 'p_bogdan',     target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_irmina',     target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_irmina',     target: 'biz_beachbox',label: '',       v: ['zespol'] },
-  { source: 'p_krzysztof_s',target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_krzysztof_s',target: 'biz_muszla',  label: '',       v: ['zespol'] },
-  { source: 'p_julia',      target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_julia',      target: 'biz_muszla',  label: '',       v: ['zespol'] },
-  { source: 'p_kamil_k',    target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_kamil_k',    target: 'biz_muszla',  label: '',       v: ['zespol'] },
-  { source: 'p_patrycja_k', target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_patrycja_k', target: 'biz_muszla',  label: '',       v: ['zespol'] },
-  { source: 'p_anastasiia', target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_anastasiia', target: 'biz_beachbox',label: '',       v: ['zespol'] },
-  { source: 'p_vasyl',      target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_vasyl',      target: 'biz_beachbox',label: '',       v: ['zespol'] },
-  { source: 'p_oliwia',     target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_oliwia',     target: 'biz_beachbox',label: '',       v: ['zespol'] },
-  { source: 'p_iryna_s',    target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_iryna_s',    target: 'biz_beachbox',label: '',       v: ['zespol'] },
-  { source: 'p_tadeusz',    target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_krystian',   target: 'biz_per',     label: 'B2B',    v: ['zespol'] },
-  { source: 'p_viktoria',   target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_viktoria',   target: 'biz_beachbox',label: '',       v: ['zespol'] },
-  { source: 'p_inna',       target: 'biz_per',     label: '',       v: ['zespol'] },
-  { source: 'p_inna',       target: 'biz_beachbox',label: '',       v: ['zespol'] },
+  // ========== ZESPÓŁ EDGES ==========
+  // Pracownicy są grupowani przez compound parent (grp_*) — edges wizualne zbędne
 ];
 
 // === ACTIVE VIEW ===
@@ -632,18 +552,23 @@ function buildElements(view) {
   const els = [];
   const visibleNodeIds = new Set();
 
-  // Add layer parent nodes (only in cortex view)
+  // Add layer parent nodes (only in cortex view) z licznikiem
   const usedLayers = new Set();
+  const layerCounts = {};
   nodes.forEach(n => {
     if (view === 'all' || n.v.includes(view)) {
-      if (view === 'cortex' && nodeToLayer[n.id]) usedLayers.add(nodeToLayer[n.id]);
+      if (view === 'cortex' && nodeToLayer[n.id]) {
+        usedLayers.add(nodeToLayer[n.id]);
+        layerCounts[nodeToLayer[n.id]] = (layerCounts[nodeToLayer[n.id]]||0) + 1;
+      }
     }
   });
   if (view === 'cortex') {
     layers.forEach(L => {
       if (usedLayers.has(L.id)) {
         visibleNodeIds.add(L.id);
-        els.push({ data: { id: L.id, label: L.label, type: 'layer', desc: L.desc } });
+        const lbl = `${L.label} (${layerCounts[L.id]||0})`;
+        els.push({ data: { id: L.id, label: lbl, type: 'layer', desc: L.desc } });
       }
     });
   }
@@ -653,6 +578,7 @@ function buildElements(view) {
       visibleNodeIds.add(n.id);
       const d = { id: n.id, label: n.label, type: n.type, desc: n.desc };
       if (view === 'cortex' && nodeToLayer[n.id]) d.parent = nodeToLayer[n.id];
+      if (n.parent) d.parent = n.parent;  // zespol groups
       els.push({ data: d });
     }
   });
@@ -857,6 +783,36 @@ const cy = cytoscape({
         }
       }));
     })(),
+    // Person sizes per hierarchy level
+    { selector: 'node[type="person_zarzad"]',            style: { 'width': 64, 'height': 64, 'font-size': 12, 'font-weight': 'bold', 'border-width': 3, 'border-color': '#f0e68c' } },
+    { selector: 'node[type="person_management"]',        style: { 'width': 52, 'height': 52, 'font-size': 11, 'font-weight': 'bold', 'border-width': 2.5 } },
+    { selector: 'node[type="person_kierownicy"]',        style: { 'width': 44, 'height': 44, 'font-size': 10 } },
+    { selector: 'node[type="person_specjalisci"]',       style: { 'width': 38, 'height': 38, 'font-size': 9 } },
+    { selector: 'node[type="person_pracownik_liniowy"]', style: { 'width': 32, 'height': 32, 'font-size': 9 } },
+    // Group parent (zespol view)
+    {
+      selector: 'node[type="group"]',
+      style: {
+        'background-color': '#161b22',
+        'background-opacity': 0.5,
+        'border-color': '#d29922',
+        'border-opacity': 0.5,
+        'border-width': 2,
+        'border-style': 'dashed',
+        'shape': 'round-rectangle',
+        'label': 'data(label)',
+        'text-valign': 'top',
+        'text-halign': 'center',
+        'text-margin-y': -10,
+        'font-size': 13,
+        'font-weight': 'bold',
+        'color': '#d29922',
+        'padding': '40px',
+        'background-image': 'none',
+        'min-width': 180,
+        'min-height': 120,
+      }
+    },
     // Layer parent nodes — duże kontenery grupujące
     {
       selector: 'node[type="layer"]',
@@ -1059,9 +1015,42 @@ function showNodeDetails(node) {
     connectionsHtml += '</div>';
   }
 
+  // Link do usługi zewnętrznej (klik → open)
+  const serviceUrls = {
+    repo_cortex: 'https://github.com/aszufel/Cortex',
+    repo_pm: 'https://github.com/aszufel/PM',
+    repo_zakupex: 'https://github.com/aszufel/Zakupex',
+    repo_janusz: 'https://github.com/aszufel/Janusz',
+    repo_gustaw: 'https://github.com/aszufel/Gustaw',
+    repo_muszla: 'https://github.com/aszufel/muszla.pl',
+    repo_voice: 'https://github.com/aszufel/voice-notion-app',
+    vercel: 'https://vercel.com/dashboard',
+    app_pm: 'https://price.partnerexpert.work',
+    app_zakupex: 'https://zakupex.vercel.app',
+    app_muszla: 'https://muszlakolobrzeg.pl',
+    mikrus: 'https://mikr.us/panel/',
+    dhosting: 'https://panel.dhosting.pl/',
+    gcp: 'https://console.cloud.google.com/home/dashboard?project=ai-council-487609',
+    gcp_sm: 'https://console.cloud.google.com/security/secret-manager?project=ai-council-487609',
+    gcp_bucket: 'https://console.cloud.google.com/storage/browser/peg-backups-cortex?project=ai-council-487609',
+    gcp_ar: 'https://console.cloud.google.com/artifacts?project=ai-council-487609',
+    gcp_uptime: 'https://console.cloud.google.com/monitoring/uptime?project=ai-council-487609',
+    cr_notion_backup: 'https://console.cloud.google.com/run/detail/europe-central2/notion-backup?project=ai-council-487609',
+    cr_supabase_backup: 'https://console.cloud.google.com/run/detail/europe-central2/supabase-backup?project=ai-council-487609',
+    cr_cloudflare_backup: 'https://console.cloud.google.com/run/detail/europe-central2/cloudflare-backup?project=ai-council-487609',
+    cr_recenzent: 'https://console.cloud.google.com/run/detail/europe-central2/recenzent?project=ai-council-487609',
+    cr_content: 'https://console.cloud.google.com/run/jobs/details/europe-central2/content-pipeline?project=ai-council-487609',
+    notion_api_firm: 'https://www.notion.so/',
+    notion_api_priv: 'https://www.notion.so/',
+    supabase: 'https://supabase.com/dashboard/projects',
+    cloudflare_api: 'https://dash.cloudflare.com/',
+  };
+  const url = serviceUrls[d.id];
+  const openBtn = url ? `<a href="${url}" target="_blank" style="display:inline-block;margin-left:8px;padding:3px 10px;background:#58a6ff22;color:#58a6ff;border:1px solid #58a6ff44;border-radius:6px;font-size:11px;text-decoration:none">→ Open</a>` : '';
+
   sidebar.innerHTML = `
     <button class="back-btn" id="backBtn">← Powrót</button>
-    <h2>${d.label}</h2>
+    <h2>${d.label}${openBtn}</h2>
     <span class="node-type" style="background:${t.color}22;color:${t.color};border:1px solid ${t.color}44"><img src="${ICON_BASE}/${t.icon}.svg?color=${encodeURIComponent(t.color)}" style="width:12px;height:12px;vertical-align:middle;margin-right:4px">${t.label}</span>
     <div class="detail"><div class="detail-label">Opis</div><div class="detail-value">${d.desc}</div></div>
     ${connectionsHtml}
@@ -1242,6 +1231,15 @@ document.querySelectorAll('.views button').forEach(btn => {
   btn.addEventListener('click', function() {
     history.replaceState(null, '', '#' + this.dataset.view);
   });
+});
+
+// === EXPORT PNG ===
+document.getElementById('btn-export').addEventListener('click', () => {
+  const png = cy.png({ full: true, scale: 2, bg: '#0f1117' });
+  const a = document.createElement('a');
+  a.href = png;
+  a.download = `atlas-${activeView}-${new Date().toISOString().slice(0,10)}.png`;
+  a.click();
 });
 
 // === LEGEND TOGGLE (mobile) ===
