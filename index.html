@@ -12,6 +12,9 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
 <script src="https://unpkg.com/cytoscape@3.30.4/dist/cytoscape.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/layout-base@2.0.1/layout-base.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/cose-base@2.2.0/cose-base.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/cytoscape-fcose@2.2.0/cytoscape-fcose.js" crossorigin="anonymous"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e1e4e8; height: 100vh; display: flex; flex-direction: column; }
@@ -118,10 +121,10 @@ const TYPES = {
   api:      { label: 'API',        color: '#58a6ff', shape: 'round-rectangle', icon: 'tabler/cloud' },
   timer:    { label: 'Timer',      color: '#d29922', shape: 'round-rectangle', icon: 'tabler/clock' },
   cron:     { label: 'Cron PHP',   color: '#db6d28', shape: 'round-rectangle', icon: 'tabler/clock-play' },
-  gcp:      { label: 'GCP',        color: '#4285f4', shape: 'round-rectangle', icon: 'tabler/cloud-cog' },
+  gcp:      { label: 'GCP',        color: '#4285f4', shape: 'round-rectangle', icon: 'simple-icons/googlecloud' },
   sched:    { label: 'Scheduler',  color: '#4285f4', shape: 'round-rectangle', icon: 'tabler/alarm' },
   secret:   { label: 'Secret',     color: '#6f42c1', shape: 'round-rectangle', icon: 'tabler/key' },
-  bucket:   { label: 'Storage',    color: '#0ea5e9', shape: 'round-rectangle', icon: 'tabler/database' },
+  bucket:   { label: 'Storage',    color: '#0ea5e9', shape: 'round-rectangle', icon: 'simple-icons/googlecloudstorage' },
   mcp:      { label: 'MCP',        color: '#bc8cff', shape: 'round-rectangle', icon: 'tabler/puzzle' },
   app:      { label: 'Aplikacja',  color: '#f778ba', shape: 'round-rectangle', icon: 'tabler/app-window' },
   repo:     { label: 'Repo',       color: '#8b949e', shape: 'round-rectangle', icon: 'tabler/git-branch' },
@@ -764,6 +767,96 @@ const cy = cytoscape({
         'background-image-opacity': 0.9,
       }
     })),
+    // Brand icon overrides — prawdziwe logo serwisów
+    ...(() => {
+      const brandIcons = {
+        // Vercel
+        vercel: 'simple-icons/vercel',
+        // Mikrus & servers
+        laptop: 'tabler/device-laptop',
+        strych: 'tabler/archive',
+        // APIs — brands
+        gmail_api: 'simple-icons/gmail',
+        calendar_api: 'simple-icons/googlecalendar',
+        notion_api_firm: 'simple-icons/notion',
+        notion_api_priv: 'simple-icons/notion',
+        cloudflare_api: 'simple-icons/cloudflare',
+        openai_api: 'simple-icons/openai',
+        gdrive_api: 'simple-icons/googledrive',
+        supabase: 'simple-icons/supabase',
+        apify: 'tabler/robot',
+        gbp_api: 'simple-icons/google',
+        fb_api: 'simple-icons/facebook',
+        google_ads_api: 'simple-icons/googleads',
+        google_admin_api: 'simple-icons/google',
+        indexing_api: 'simple-icons/google',
+        ga4_api: 'simple-icons/googleanalytics',
+        gsc_api: 'simple-icons/googlesearchconsole',
+        fireflies_api: 'tabler/microphone-2',
+        psi_api: 'simple-icons/pagespeedinsights',
+        mikrus_pg: 'simple-icons/postgresql',
+        dhosting_ftp: 'tabler/file-upload',
+        // Scripts that use brand
+        cloudflare_py: 'simple-icons/cloudflare',
+        google_ads_py: 'simple-icons/googleads',
+        ga4_py: 'simple-icons/googleanalytics',
+        search_console_py: 'simple-icons/googlesearchconsole',
+        fireflies_py: 'tabler/microphone-2',
+        notion_py: 'simple-icons/notion',
+        notion_replace_py: 'simple-icons/notion',
+        notion2email_py: 'simple-icons/notion',
+        gmail_py: 'simple-icons/gmail',
+        calendar_py: 'simple-icons/googlecalendar',
+        gbp_py: 'simple-icons/google',
+        google_admin_py: 'simple-icons/google',
+        indexing_py: 'simple-icons/google',
+        // Repos
+        repo_cortex: 'simple-icons/github',
+        repo_pm: 'simple-icons/github',
+        repo_zakupex: 'simple-icons/github',
+        repo_janusz: 'simple-icons/github',
+        repo_gustaw: 'simple-icons/github',
+        repo_muszla: 'simple-icons/github',
+        repo_voice: 'simple-icons/github',
+        // Apps
+        app_pm: 'simple-icons/nextdotjs',
+        app_zakupex: 'simple-icons/nextdotjs',
+        app_muszla: 'simple-icons/astro',
+        app_janusz: 'simple-icons/whatsapp',
+        app_gustaw: 'simple-icons/whatsapp',
+        app_bot_voice: 'simple-icons/openai',
+        app_atlas: 'tabler/map-2',
+        // MCP
+        mcp_chrome: 'simple-icons/googlechrome',
+        mcp_canva: 'simple-icons/canva',
+        mcp_ahrefs: 'simple-icons/ahrefs',
+        mcp_fireflies: 'tabler/microphone-2',
+        mcp_gmail: 'simple-icons/gmail',
+        mcp_calendar: 'simple-icons/googlecalendar',
+        mcp_notion_ai: 'simple-icons/notion',
+        mcp_notion_firm: 'simple-icons/notion',
+        mcp_notion_priv: 'simple-icons/notion',
+        // Hosting
+        vercel: 'simple-icons/vercel',
+        // GCP specifics
+        cr_notion_backup: 'simple-icons/notion',
+        cr_supabase_backup: 'simple-icons/supabase',
+        cr_cloudflare_backup: 'simple-icons/cloudflare',
+        cr_recenzent: 'simple-icons/google',
+        cr_content: 'tabler/video',
+        gcp_bucket: 'simple-icons/googlecloudstorage',
+        gcp_ar: 'simple-icons/docker',
+        gcp_sm: 'tabler/key',
+        gcp_uptime: 'tabler/activity-heartbeat',
+        gcp: 'simple-icons/googlecloud',
+      };
+      return Object.entries(brandIcons).map(([id, icon]) => ({
+        selector: `#${id}`,
+        style: {
+          'background-image': `${ICON_BASE}/${icon}.svg?color=%23ffffff`,
+        }
+      }));
+    })(),
     // Layer parent nodes — duże kontenery grupujące
     {
       selector: 'node[type="layer"]',
@@ -834,7 +927,26 @@ const cy = cytoscape({
     { selector: 'edge.highlighted', style: { 'label': 'data(label)', 'line-color': '#58a6ff', 'target-arrow-color': '#58a6ff', 'width': 2.5, 'opacity': 1, 'z-index': 999 } },
     { selector: 'node.search-match', style: { 'border-width': 4, 'border-color': '#f85149', 'font-size': 12, 'font-weight': 'bold' } },
   ],
-  layout: { name: 'cose', animate: false, nodeRepulsion: 80000, idealEdgeLength: 120, edgeElasticity: 100, gravity: 0.3, numIter: 1500, padding: 40 },
+  layout: {
+    name: 'fcose',
+    animate: false,
+    quality: 'proof',
+    randomize: true,
+    nodeRepulsion: 7000,
+    idealEdgeLength: 110,
+    edgeElasticity: 0.45,
+    gravity: 0.25,
+    gravityRangeCompound: 1.2,
+    gravityCompound: 1.0,
+    nestingFactor: 0.3,
+    numIter: 2500,
+    padding: 30,
+    nodeSeparation: 80,
+    tile: true,
+    tilingPaddingVertical: 15,
+    tilingPaddingHorizontal: 15,
+    packComponents: true,
+  },
   minZoom: 0.2,
   maxZoom: 4,
   wheelSensitivity: 0.3,
