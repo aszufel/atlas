@@ -559,8 +559,44 @@ const edges = [
   { source: 'biz_pei', target: 'str_celka',    label: 'pauza',      v: ['biznesy'] },
   { source: 'biz_pei', target: 'str_p50',      label: 'pauza',      v: ['biznesy'] },
 
-  // ========== ZESPÓŁ EDGES ==========
-  // Pracownicy są grupowani przez compound parent (grp_*) — edges wizualne zbędne
+  // ========== ZESPÓŁ EDGES — hierarchia ==========
+  // Zarząd / Management w grupie → podwładni
+  // Adi/Oliver/Kamila w PEI (holding)
+  { source: 'p_adrianszufel',      target: 'p_oliverandrzejczuk', label: 'co-owner',  v: ['zespol'] },
+  { source: 'p_adrianszufel',      target: 'p_kamilaszczutkowska',label: 'finanse',   v: ['zespol'] },
+  { source: 'p_adrianszufel',      target: 'p_patrycjafurmankiewic', label: 'PEO',    v: ['zespol'] },
+  { source: 'p_adrianszufel',      target: 'p_urszulakokoszczyk', label: 'Muszla',    v: ['zespol'] },
+  { source: 'p_adrianszufel',      target: 'p_irminaandrzejczuk', label: 'Beach Box', v: ['zespol'] },
+  // Patrycja F. → IND.U + Sunday
+  { source: 'p_patrycjafurmankiewic', target: 'p_dorotakornas',   label: 'PEO',       v: ['zespol'] },
+  { source: 'p_patrycjafurmankiewic', target: 'p_beatakasprzak',  label: 'HK',        v: ['zespol'] },
+  { source: 'p_patrycjafurmankiewic', target: 'p_paularyzewskakorzen', label: 'admin',v: ['zespol'] },
+  { source: 'p_patrycjafurmankiewic', target: 'p_mateuszkasprzak',label: 'technik',   v: ['zespol'] },
+  { source: 'p_patrycjafurmankiewic', target: 'p_majalimanska',   label: 'PM',        v: ['zespol'] },
+  // Irmina → Beach Box
+  { source: 'p_irminaandrzejczuk', target: 'p_oliwiawojcik',       label: 'bar BB',    v: ['zespol'] },
+  { source: 'p_oliwiawojcik',      target: 'p_anastasiiamakedonska', label: '',        v: ['zespol'] },
+  { source: 'p_oliwiawojcik',      target: 'p_viktoriakulchytskavo', label: '',        v: ['zespol'] },
+  { source: 'p_irminaandrzejczuk', target: 'p_tetianapoklad',     label: 'kuchnia',   v: ['zespol'] },
+  { source: 'p_irminaandrzejczuk', target: 'p_innakvasnikowa',    label: '',          v: ['zespol'] },
+  { source: 'p_irminaandrzejczuk', target: 'p_irynashestakowa',   label: '',          v: ['zespol'] },
+  { source: 'p_irminaandrzejczuk', target: 'p_vasylkharskyy',     label: 'stróż',     v: ['zespol'] },
+  // Ula → Muszla
+  { source: 'p_urszulakokoszczyk', target: 'p_patrycjakozbial',   label: 'bar',       v: ['zespol'] },
+  { source: 'p_patrycjakozbial',   target: 'p_juliamalecka',      label: '',          v: ['zespol'] },
+  { source: 'p_urszulakokoszczyk', target: 'p_krzysztofseralis',  label: 'kuchnia',   v: ['zespol'] },
+  { source: 'p_urszulakokoszczyk', target: 'p_kaletakamil',       label: '',          v: ['zespol'] },
+  // Buchuta Dorota → Sunset (jedna osoba grupy, raportuje do Irminy/Uli)
+  { source: 'p_irminaandrzejczuk', target: 'p_buchutadorota',     label: 'Sunset',    v: ['zespol'] },
+  // PER cross-venue (technika) — raportują do Olivera (ops)
+  { source: 'p_oliverandrzejczuk', target: 'p_tomaszciecwierski', label: 'technik',   v: ['zespol'] },
+  { source: 'p_oliverandrzejczuk', target: 'p_bogdanbelej',       label: 'technik',   v: ['zespol'] },
+  { source: 'p_oliverandrzejczuk', target: 'p_tadeuszzaborowski', label: 'technik',   v: ['zespol'] },
+  { source: 'p_oliverandrzejczuk', target: 'p_bartoszpietrasiak', label: 'B2B elektryk', v: ['zespol'] },
+  { source: 'p_oliverandrzejczuk', target: 'p_krystiangaik',      label: 'B2B',       v: ['zespol'] },
+  // Lobby Bar/Spot → Patrycja F. (PEO)
+  { source: 'p_patrycjafurmankiewic', target: 'p_dariacieslak',     label: 'Spot',    v: ['zespol'] },
+  { source: 'p_patrycjafurmankiewic', target: 'p_katarzynamatyjaszczy', label: 'Spot', v: ['zespol'] },
 ];
 
 // === ACTIVE VIEW ===
