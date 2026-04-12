@@ -585,9 +585,16 @@ function buildElements(view) {
 
 // Node'y z backupem (badge w prawym dolnym rogu)
 const BACKED_UP = new Set([
-  'env_file', 'mikrus_pg',                                              // archiwista → strych
-  'repo_cortex', 'repo_pm', 'repo_zakupex', 'repo_janusz',              // git/GitHub
+  // Archiwista → strych.mikr.us
+  'env_file', 'mikrus_pg',
+  // Git / GitHub
+  'repo_cortex', 'repo_pm', 'repo_zakupex', 'repo_janusz',
   'repo_gustaw', 'repo_muszla', 'repo_voice',
+  // Aplikacje — kod i deploy idą z git
+  'app_pm', 'app_zakupex', 'app_janusz', 'app_gustaw',
+  'app_bot_voice', 'app_atlas', 'app_muszla',
+  // Hosting stron — deployowane z git przez FTP
+  'dhosting',
 ]);
 
 // HTML overlay container for backup badges (renderowane nad node'ami, poza ich bryłą)
