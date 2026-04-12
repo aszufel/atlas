@@ -254,7 +254,6 @@ const nodes = [
   { id: 'mcp_fireflies',   label: 'Fireflies MCP',         type: 'mcp', v: ['cortex'], desc: 'transkrypcje' },
   { id: 'mcp_gmail',       label: 'Gmail MCP',             type: 'mcp', v: ['cortex'], desc: 'Gmail z Claude.ai' },
   { id: 'mcp_calendar',    label: 'Calendar MCP',          type: 'mcp', v: ['cortex'], desc: 'kalendarz z Claude.ai' },
-  { id: 'mcp_ahrefs',      label: 'Ahrefs MCP',            type: 'mcp', v: ['cortex'], desc: 'SEO / backlinki' },
 
   // Apps
   { id: 'app_pm',          label: 'PM',                    type: 'app', v: ['cortex'], desc: 'Pricing Manager — Next.js 16, Supabase, Apify — price.partnerexpert.work' },
@@ -405,12 +404,10 @@ const edges = [
   { source: 'knowledge_dir', target: 'adi_psychology', label: 'profil',  v: ['cortex'] },
   { source: 'knowledge_dir', target: 'quotes_mazur',   label: 'cytaty',  v: ['cortex'] },
   // Atlas — osobny repo
-  { source: 'app_atlas', target: 'laptop',  label: 'deploy',    v: ['cortex'] },
   { source: 'mcp_chrome',     target: 'laptop',          label: 'browser',  v: ['cortex'] },
-  { source: 'mcp_canva',      target: 'app_muszla',      label: 'design',   v: ['cortex'] },
+  { source: 'mcp_canva',      target: 'laptop',          label: 'MCP w chat', v: ['cortex'] },
   { source: 'mcp_notion_ai',  target: 'notion_api_firm', label: 'proxies',  v: ['cortex'] },
   { source: 'mcp_notion_ai',  target: 'notion_api_priv', label: 'proxies',  v: ['cortex'] },
-  { source: 'mcp_ahrefs',     target: 'seo_report_py',   label: 'SEO',      v: ['cortex'] },
   { source: 'gmail_py',          target: 'gmail_api',       label: 'OAuth',       v: ['cortex'] },
   { source: 'calendar_py',       target: 'calendar_api',    label: 'OAuth',       v: ['cortex'] },
   { source: 'notion_py',         target: 'notion_api_firm', label: 'token',       v: ['cortex'] },
@@ -532,7 +529,7 @@ const edges = [
   { source: 'cr_content',          target: 'openai_api',      label: 'Whisper+GPT', v: ['cortex'] },
   { source: 'cr_content',          target: 'gdrive_api',      label: 'rolki Shared Drive', v: ['cortex'] },
   { source: 'cr_content',          target: 'notion_api_firm', label: 'Social Planner', v: ['cortex'] },
-  { source: 'cr_content',          target: 'gcp_ar',          label: 'image',  v: ['cortex'] },
+  { source: 'gcp_ar',              target: 'cr_content',      label: 'Docker image', v: ['cortex'] },
   // Uptime monitoring
   { source: 'gcp_uptime', target: 'app_janusz', label: 'health check', v: ['cortex'] },
   // Persony → Mikrus
@@ -854,7 +851,6 @@ const cy = cytoscape({
         // MCP
         mcp_chrome: 'simple-icons/googlechrome',
         mcp_canva: 'simple-icons/canva',
-        mcp_ahrefs: 'simple-icons/ahrefs',
         mcp_fireflies: 'tabler/microphone-2',
         mcp_gmail: 'simple-icons/gmail',
         mcp_calendar: 'simple-icons/googlecalendar',
