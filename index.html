@@ -102,7 +102,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <input type="text" id="search" placeholder="Szukaj... ( / )">
   </div>
   <button id="btn-export" title="Zapisz jako PNG" style="padding:6px 12px;background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:6px;cursor:pointer;font-size:12px">📷 PNG</button>
-  <span id="updated-ts" style="font-size:11px;color:#484f58;margin-left:auto">updated: 2026-04-13</span>
+  <span id="updated-ts" style="font-size:11px;color:#484f58;margin-left:auto">updated: 2026-04-14</span>
 </div>
 
 <div class="main">
@@ -422,12 +422,22 @@ const cy = cytoscape({
         gcp_uptime: 'tabler/activity-heartbeat',
         gcp: 'simple-icons/googlecloud',
       };
-      return Object.entries(brandIcons).map(([id, icon]) => ({
-        selector: `#${id}`,
-        style: {
-          'background-image': `${ICON_BASE}/${icon}.svg?color=%23ffffff`,
-        }
-      }));
+      return Object.entries(brandIcons).map(([id, icon]) => {
+        const isBrand = icon.startsWith('simple-icons/');
+        return {
+          selector: `#${id}`,
+          style: isBrand ? {
+            'background-image': `${ICON_BASE}/${icon}.svg?color=%23ffffff`,
+            'background-color': '#1c2128',
+            'background-width': '50%',
+            'background-height': '50%',
+            'border-color': '#30363d',
+            'border-opacity': 0.9,
+          } : {
+            'background-image': `${ICON_BASE}/${icon}.svg?color=%23ffffff`,
+          }
+        };
+      });
     })(),
     // Person sizes per hierarchy level
     { selector: 'node[type="person_zarzad"]',            style: { 'width': 64, 'height': 64, 'font-size': 12, 'font-weight': 'bold', 'border-width': 3, 'border-color': '#f0e68c' } },
@@ -530,6 +540,7 @@ const cy = cytoscape({
     { selector: 'edge.faded', style: { 'opacity': 0.08 } },
     { selector: 'edge.highlighted', style: { 'label': 'data(label)', 'line-color': '#58a6ff', 'target-arrow-color': '#58a6ff', 'width': 2.5, 'opacity': 1, 'z-index': 999 } },
     { selector: 'node.search-match', style: { 'border-width': 4, 'border-color': '#f85149', 'font-size': 12, 'font-weight': 'bold' } },
+    { selector: 'node.hover', style: { 'border-width': 3, 'border-color': '#58a6ff', 'border-opacity': 1, 'z-index': 900 } },
   ],
   layout: {
     name: 'fcose',
@@ -584,6 +595,7 @@ let tooltipTimeout = null;
 cy.on('mouseover', 'node', function(e) {
   clearTimeout(tooltipTimeout);
   const node = e.target;
+  if (node.data('type') !== 'group' && node.data('type') !== 'layer') node.addClass('hover');
   const d = node.data();
   const t = TYPES[d.type];
   const pos = e.renderedPosition;
@@ -602,7 +614,8 @@ cy.on('mouseover', 'node', function(e) {
   tooltipEl.style.left = tx + 'px';
   tooltipEl.style.top = ty + 'px';
 });
-cy.on('mouseout', 'node', function() {
+cy.on('mouseout', 'node', function(e) {
+  e.target.removeClass('hover');
   tooltipTimeout = setTimeout(() => { tooltipEl.style.display = 'none'; }, 100);
 });
 cy.on('tap', 'node', function() { tooltipEl.style.display = 'none'; });
