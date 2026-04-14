@@ -136,6 +136,7 @@ const nodes = [
   { id: 'repo_gustaw',     label: 'Gustaw.git',            type: 'repo', v: ['cortex'], desc: 'Node.js, Baileys, GPT-4o — WhatsApp asystent Adiego' },
   { id: 'repo_muszla',     label: 'muszla.pl.git',         type: 'repo', v: ['cortex'], desc: 'Astro' },
   { id: 'repo_voice',      label: 'voice-notion-app.git',  type: 'repo', v: ['cortex'], desc: 'Node.js' },
+  { id: 'repo_atlas',      label: 'atlas.git',             type: 'repo', v: ['cortex'], desc: 'Cytoscape.js — mapa ekosystemu PEG, hostowana na GitHub Pages' },
 
   // Hosting
   { id: 'vercel',          label: 'Vercel',                type: 'hosting', v: ['cortex'], desc: 'PM, ZakupEX, BOT Voice, muszla.pl' },
@@ -314,6 +315,7 @@ const edges = [
   { source: 'repo_janusz',   target: 'app_janusz',   label: 'builds', v: ['cortex'] },
   { source: 'repo_muszla',   target: 'app_muszla',   label: 'builds', v: ['cortex'] },
   { source: 'repo_voice',    target: 'app_bot_voice', label: 'builds',v: ['cortex'] },
+  { source: 'repo_atlas',    target: 'app_atlas',    label: 'builds', v: ['cortex'] },
   { source: 'app_pm',      target: 'vercel',  label: 'deploy', v: ['cortex'] },
   { source: 'app_zakupex', target: 'vercel',  label: 'deploy', v: ['cortex'] },
   { source: 'app_muszla',  target: 'vercel',  label: 'deploy', v: ['cortex'] },
