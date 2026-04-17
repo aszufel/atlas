@@ -38,7 +38,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .main { display: flex; flex: 1; overflow: hidden; }
 #cy { flex: 1; }
 
-.sidebar { width: 320px; background: #161b22; border-left: 1px solid #30363d; padding: 20px; overflow-y: auto; flex-shrink: 0; }
+.sidebar { width: 320px; background: #161b22; border-left: 1px solid #30363d; padding: 20px; overflow-y: auto; flex-shrink: 0; transition: width .2s ease; }
+body.timeline-mode #cy { display: none !important; }
+body.timeline-mode .sidebar { width: 100%; max-width: 900px; margin: 0 auto; padding: 32px 48px; border-left: none; }
+body.timeline-mode .main { justify-content: center; }
+body.timeline-mode .legend { display: none; }
 .sidebar h2 { font-size: 16px; margin-bottom: 12px; color: #58a6ff; }
 .sidebar .node-type { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-bottom: 8px; }
 .sidebar .detail { margin-bottom: 8px; }
@@ -619,6 +623,7 @@ document.querySelectorAll('.views button').forEach(btn => {
 
     cy.elements().remove();
     document.querySelectorAll('.live-badge').forEach(el => el.remove());
+    document.body.classList.toggle('timeline-mode', view === 'timeline');
     if (view !== 'timeline') {
       cy.add(buildElements(view));
       getLayout(view).run();
