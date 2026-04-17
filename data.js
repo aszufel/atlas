@@ -12,6 +12,7 @@ const layers = [
 const nodeToLayer = {
   // GCP
   gcp: 'L_GCP', gcp_sm: 'L_GCP', gcp_bucket: 'L_GCP', gcp_ar: 'L_GCP', gcp_uptime: 'L_GCP',
+  gcp_bq: 'L_GCP',
   cr_notion_backup: 'L_GCP', cr_supabase_backup: 'L_GCP', cr_cloudflare_backup: 'L_GCP',
   cr_recenzent: 'L_GCP', cr_content: 'L_GCP',
   sch_notion: 'L_GCP', sch_supabase: 'L_GCP', sch_cf: 'L_GCP', sch_recenzent: 'L_GCP',
@@ -69,6 +70,7 @@ const nodes = [
   { id: 'check_treningi_py',label: 'check_treningi.py',     type: 'script', v: ['cortex'], desc: 'podsumowanie treningów z Notion' },
   { id: 'notion_replace_py',label: 'notion_replace_page.py',type: 'script', v: ['cortex'], desc: 'kasuje i odtwarza strone Notion (masowa edycja)' },
   { id: 'update_supl_py',   label: 'update_suplementy.py',  type: 'script', v: ['cortex'], desc: 'aktualizacja bazy suplementów' },
+  { id: 'system_audit_py',  label: 'system_audit.py',       type: 'script', v: ['cortex'], desc: 'summary/errors/tail/run/briefing — czyta BigQuery pipeline_logs. Feed sekcji "🤖 Systemy w nocy" w briefingu.' },
 
   // Timers
   { id: 'timer_context',   label: 'cortex-context (07:00)',type: 'timer', v: ['cortex'], desc: 'systemd -> update_context.py' },
@@ -146,6 +148,7 @@ const nodes = [
   { id: 'gcp_bucket',      label: 'gs://peg-backups-cortex', type: 'bucket', v: ['cortex'], desc: 'Bucket GCS, lifecycle 30 dni. Foldery: notion/, supabase/, cloudflare/, claude-config/, mikrus/' },
   { id: 'gcp_ar',          label: 'Artifact Registry',     type: 'gcp', v: ['cortex'], desc: 'cortex-jobs/ — Docker images dla Cloud Run Jobs' },
   { id: 'gcp_uptime',      label: 'Uptime Check + Alert',  type: 'gcp', v: ['cortex'], desc: 'janusz-mikrus-health co 5min → /health. Alert email: Janusz DOWN po 60s.' },
+  { id: 'gcp_bq',          label: 'BigQuery pipeline_logs', type: 'gcp', v: ['cortex'], desc: 'Dataset cortex_logs, tabela pipeline_logs (partitioned by DAY, 30d retention). Centralny dziennik wszystkich apek PEG. Kolumny: app, level, source, event, message, meta (JSON), run_id. SA: pipeline-logger.' },
 
   // GCP Cloud Run Functions (4)
   { id: 'cr_notion_backup', label: 'notion-backup',        type: 'gcp', v: ['cortex'], desc: 'Cloud Run Function — 28 baz Notion → GCS' },
@@ -385,6 +388,11 @@ const edges = [
   { source: 'gcp_ar',              target: 'cr_content',      label: 'Docker image', v: ['cortex'] },
   // Uptime monitoring
   { source: 'gcp_uptime', target: 'app_janusz', label: 'health check', v: ['cortex'] },
+  // BigQuery pipeline_logs (2026-04-17)
+  { source: 'gcp', target: 'gcp_bq', label: 'has', v: ['cortex'] },
+  { source: 'app_pm', target: 'gcp_bq', label: 'pipeline logs', v: ['cortex'] },
+  { source: 'gcp_bq', target: 'system_audit_py', label: 'query', v: ['cortex'] },
+  { source: 'system_audit_py', target: 'update_context_py', label: 'feed briefing', v: ['cortex'] },
   // Persony → Mikrus
   { source: 'app_gustaw', target: 'mikrus', label: 'deploy', v: ['cortex'] },
 
