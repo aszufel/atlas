@@ -120,7 +120,7 @@ const nodes = [
   { id: 'app_gustaw',      label: 'Gustaw',                type: 'app', v: ['cortex'], desc: 'PERSONA: WhatsApp asystent Adiego — Node.js, Baileys, GPT-4o + Gemini — Mikrus (🔴 czeka na SIM)' },
   { id: 'app_bot_voice',   label: 'BOT Voice',             type: 'app', v: ['cortex'], desc: 'Voice -> Notion — Next.js 14, Whisper, Vercel' },
   { id: 'app_atlas',       label: 'Atlas',                 type: 'app', v: ['cortex'], desc: 'Interaktywna mapa ekosystemu PEG (Cytoscape.js)' },
-  { id: 'app_muszla',      label: 'muszla.pl',             type: 'app', v: ['cortex','biznesy'], desc: 'muszlakolobrzeg.pl — Astro 5, React 19, Tailwind 4, Vercel' },
+  { id: 'app_muszla',      label: 'muszla.pl',             type: 'app', v: ['cortex'], desc: 'muszlakolobrzeg.pl — Astro 5, React 19, Tailwind 4, Vercel' },
 
   // Nowe skrypty (2026-04-11)
   { id: 'gbp_py',             label: 'gbp.py',               type: 'script', v: ['cortex'], desc: 'Google Business Profile — list, open, close, hours, reviews, reply. Aliasy: muszla, indu, sunday...' },
@@ -339,7 +339,6 @@ const edges = [
   { source: 'notion_replace_py', target: 'notion_api_firm',label: 'replace',    v: ['cortex'] },
   { source: 'seo_report_py',     target: 'gsc_api',        label: 'positions',  v: ['cortex'] },
   { source: 'seo_report_py',     target: 'ga4_api',        label: 'analytics',  v: ['cortex'] },
-  { source: 'app_muszla',        target: 'biz_muszla',     label: 'strona WWW', v: ['biznesy'] },
   // Archiwista (jedyny cron na Mikrusie)
   { source: 'cron_archiwista',    target: 'archiwista_sh',    label: 'triggers', v: ['cortex'] },
   { source: 'mikrus', target: 'cron_archiwista', label: 'cron', v: ['cortex'] },
