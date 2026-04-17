@@ -103,7 +103,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <button data-view="biznesy">Biznesy</button>
     <button data-view="zespol">Zesp&oacute;l</button>
     <button data-view="dataflow">Dataflow</button>
-    <button data-view="timeline">Timeline</button>
   </div>
   <div class="search-box">
     <input type="text" id="search" placeholder="Szukaj... ( / )" autocomplete="off">
@@ -156,7 +155,6 @@ const TYPES = {
   person_pracownik_liniowy:{label:'Liniowy',color: '#79c0ff', shape: 'ellipse', icon: 'tabler/user' },
   group:    { label: 'Grupa',      color: '#21262d', shape: 'round-rectangle', icon: '' },
   layer:    { label: 'Warstwa',    color: '#21262d', shape: 'round-rectangle', icon: '' },
-  commit:   { label: 'Commit',     color: '#58a6ff', shape: 'round-rectangle', icon: 'tabler/git-commit' },
 };
 
 // === ACTIVE VIEW ===
@@ -288,6 +286,36 @@ function getLayout(view) {
       animate: 'end',
       animationDuration: 400,
       padding: 50,
+    });
+  }
+  if (view === 'dataflow') {
+    // 3 kolumny: APKI (lewo) → STORES (środek) → SKRYPTY/CONSUMERS (prawo)
+    const COL_X = { app: 0, store: 700, script: 1400 };
+    const STORE_TYPES = new Set(['gcp', 'bucket', 'api']);
+    const perCol = { app: 0, store: 0, script: 0 };
+    const nodes = cy.nodes().filter(n => !['layer','group'].includes(n.data('type')));
+    // Sort żeby per-column ordering był deterministyczny i czytelny
+    const sorted = nodes.toArray().sort((a, b) => {
+      const la = (a.data('label') || '').toLowerCase();
+      const lb = (b.data('label') || '').toLowerCase();
+      return la.localeCompare(lb);
+    });
+    const positions = {};
+    sorted.forEach(n => {
+      const t = n.data('type');
+      let col = 'script';
+      if (t === 'app') col = 'app';
+      else if (STORE_TYPES.has(t)) col = 'store';
+      const idx = perCol[col]++;
+      positions[n.id()] = { x: COL_X[col], y: idx * 150 };
+    });
+    return cy.layout({
+      name: 'preset',
+      positions: (ele) => positions[ele.id()],
+      padding: 60,
+      animate: 'end',
+      animationDuration: 400,
+      fit: true,
     });
   }
   if (view === 'zespol') {
@@ -546,19 +574,6 @@ const cy = cytoscape({
     { selector: '#p_ula',       style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
     { selector: '#p_kamila',    style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
     { selector: '#p_maja',      style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
-    // Timeline commits — wider boxes, multiline label
-    { selector: 'node[type="commit"]', style: {
-        'width': 220, 'height': 72, 'font-size': 10, 'text-wrap': 'wrap',
-        'text-max-width': '200px', 'text-valign': 'center', 'text-halign': 'center',
-        'color': '#e1e4e8', 'shape': 'round-rectangle',
-        'background-color': '#1c2128', 'border-width': 2, 'border-color': '#58a6ff',
-        'background-image': 'none', 'text-margin-y': 0, 'padding': '8px',
-    } },
-    { selector: 'edge[source ^= "commit_"]', style: {
-        'curve-style': 'straight', 'line-color': '#30363d',
-        'target-arrow-color': '#58a6ff', 'target-arrow-shape': 'triangle',
-        'opacity': 0.6, 'width': 2,
-    } },
     // Edges — labels hidden by default, dim lines
     {
       selector: 'edge',
@@ -633,21 +648,13 @@ document.querySelectorAll('.views button').forEach(btn => {
 
     cy.elements().remove();
     document.querySelectorAll('.live-badge').forEach(el => el.remove());
-    if (view === 'timeline') {
-      loadTimelineGraph();
-    } else {
-      cy.add(buildElements(view));
-      getLayout(view).run();
-      cy.fit(undefined, 40);
-      applyBackupBadges();
-      if (typeof renderLiveStatusBadges === 'function') setTimeout(renderLiveStatusBadges, 400);
-    }
+    cy.add(buildElements(view));
+    getLayout(view).run();
+    cy.fit(undefined, 40);
+    applyBackupBadges();
+    if (typeof renderLiveStatusBadges === 'function') setTimeout(renderLiveStatusBadges, 400);
 
-    if (view === 'timeline') {
-      showTimeline();
-    } else {
-      showWelcome(view);
-    }
+    showWelcome(view);
     searchInput.value = '';
     updateLegend(view);
     updateStats(view);
@@ -700,8 +707,7 @@ const VIEW_INFO = {
   cortex: { title: 'Cortex', icon: '\u{1F9E0}', desc: 'System operacyjny AI — skrypty, API, MCP, timery, aplikacje i repozytoria. Wszystko co napędza PEG od strony technologicznej.', hub: 'repo_cortex' },
   biznesy: { title: 'Biznesy', icon: '\u{1F3E2}', desc: 'Struktura grupy PEG — spółki (PEI, PEO, PER), punkty operacyjne i projekty strategiczne.', hub: 'biz_peg' },
   zespol: { title: 'Zespół', icon: '\u{1F465}', desc: 'Pracownicy PEG — kto gdzie pracuje, powiązania z punktami i spółkami.', hub: 'p_adrianszufel' },
-  dataflow: { title: 'Dataflow', icon: '\u{1F30A}', desc: 'Gdzie żyją dane. Source/sink analiza: kto pisze do Supabase, kto do Notion, kto czyta z BigQuery. Klucz do audytu bezpieczeństwa i integracji.' },
-  timeline: { title: 'Timeline', icon: '\u{23F3}', desc: 'Historia zmian w atlasie — co kiedy dołożone. Z git log repo aszufel/atlas.' },
+  dataflow: { title: 'Dataflow', icon: '\u{1F30A}', desc: 'Gdzie żyją dane PEG. Lewo: APKI (źródła danych — PM, Zakupex, Janusz). Środek: MAGAZYNY (bazy, storage, API — Supabase, Notion, BigQuery, GCS). Prawo: KONSUMENCI (skrypty Cortex, crony, raporty). Strzałka = przepływ danych.' },
 };
 
 function showWelcome(view) {
@@ -756,95 +762,6 @@ function showWelcome(view) {
 }
 
 showWelcome('cortex');
-
-// Cache for commit details (klik node → pokaż pełny message)
-const commitMeta = {};
-
-async function loadTimelineGraph() {
-  sidebar.innerHTML = `<div class="welcome"><h2>\u23F3 Timeline</h2><div class="view-desc"><p>${VIEW_INFO.timeline.desc}</p></div><p class="empty">Ładuję commity z GitHub…</p></div>`;
-  try {
-    const res = await fetch('https://api.github.com/repos/aszufel/atlas/commits?per_page=30');
-    if (!res.ok) throw new Error('GitHub API error ' + res.status);
-    const commits = await res.json();
-
-    // Ascending (najstarsze lewo)
-    const reversed = commits.slice().reverse();
-    const rows = 3;   // zygzak 3-rzędowy, żeby labele się nie zlewały
-    const xSpace = 240;
-    const ySpace = 130;
-
-    const commitNodes = reversed.map((c, i) => {
-      const d = new Date(c.commit.author.date);
-      const dateLabel = d.toISOString().slice(5, 10);
-      const firstLine = c.commit.message.split('\n')[0];
-      const short = firstLine.length > 38 ? firstLine.slice(0, 38) + '…' : firstLine;
-      const nodeId = 'commit_' + c.sha.slice(0, 10);
-      commitMeta[nodeId] = {
-        sha: c.sha,
-        shortSha: c.sha.slice(0, 7),
-        date: d.toLocaleString('pl-PL'),
-        iso: c.commit.author.date,
-        fullMessage: c.commit.message,
-        url: c.html_url,
-        author: c.commit.author.name,
-      };
-      return {
-        data: {
-          id: nodeId,
-          label: `${dateLabel}\n${short}`,
-          type: 'commit',
-          desc: c.commit.message,
-        },
-        position: { x: i * xSpace, y: (i % rows) * ySpace },
-      };
-    });
-
-    const commitEdges = reversed.slice(1).map((c, i) => ({
-      data: {
-        id: 'ce_' + i,
-        source: 'commit_' + reversed[i].sha.slice(0, 10),
-        target: 'commit_' + c.sha.slice(0, 10),
-        label: '',
-      }
-    }));
-
-    cy.add([...commitNodes, ...commitEdges]);
-    cy.layout({ name: 'preset' }).run();
-    cy.fit(undefined, 60);
-
-    // Welcome sidebar
-    sidebar.innerHTML = `<div class="welcome">
-      <h2>\u23F3 Timeline</h2>
-      <div class="view-desc"><p>${VIEW_INFO.timeline.desc}</p></div>
-      <div class="detail"><div class="detail-label">Na mapie</div><div class="detail-value" style="font-size:12px">${reversed.length} commitów (od najstarszego z lewej)</div></div>
-      <p class="hint">Kliknij blok commita żeby zobaczyć pełną wiadomość i link do diffa.</p>
-    </div>`;
-  } catch (e) {
-    sidebar.innerHTML = `<div class="welcome"><h2>\u23F3 Timeline</h2><p class="empty">B\u0142\u0105d: ${e.message}</p></div>`;
-  }
-}
-
-function showCommitDetails(node) {
-  const meta = commitMeta[node.id()];
-  if (!meta) return showNodeDetails(node);
-  const msgLines = meta.fullMessage.split('\n');
-  const first = msgLines[0];
-  const body = msgLines.slice(1).join('\n').trim();
-  sidebar.innerHTML = `
-    <button class="back-btn" id="backBtn">← Powrót</button>
-    <h2>${first.replace(/</g, '&lt;')}</h2>
-    <span class="node-type" style="background:#58a6ff22;color:#58a6ff;border:1px solid #58a6ff44">Commit</span>
-    <div class="detail"><div class="detail-label">Data</div><div class="detail-value">${meta.date}</div></div>
-    <div class="detail"><div class="detail-label">Autor</div><div class="detail-value">${meta.author}</div></div>
-    <div class="detail"><div class="detail-label">SHA</div><div class="detail-value" style="font-family:monospace;font-size:12px">${meta.shortSha}</div></div>
-    ${body ? `<div class="detail"><div class="detail-label">Szczegóły</div><div class="detail-value" style="white-space:pre-wrap;font-size:12px;color:#8b949e">${body.replace(/</g, '&lt;')}</div></div>` : ''}
-    <div class="detail"><a href="${meta.url}" target="_blank" style="display:inline-block;margin-top:8px;padding:4px 12px;background:#58a6ff22;color:#58a6ff;border:1px solid #58a6ff44;border-radius:6px;font-size:12px;text-decoration:none">Otwórz na GitHub →</a></div>
-  `;
-  document.getElementById('backBtn').addEventListener('click', () => {
-    cy.elements().removeClass('highlighted faded search-match');
-    loadTimelineGraph();
-  });
-}
 
 function showNodeDetails(node) {
   const d = node.data();
@@ -945,11 +862,7 @@ function highlightNode(node) {
   cy.elements().not(neighborhood).addClass('faded');
   neighborhood.addClass('highlighted');
   node.addClass('highlighted');
-  if (node.data('type') === 'commit') {
-    showCommitDetails(node);
-  } else {
-    showNodeDetails(node);
-  }
+  showNodeDetails(node);
 }
 
 cy.on('tap', 'node', function(e) { highlightNode(e.target); });
@@ -1250,7 +1163,6 @@ function renderLiveStatusBadges() {
   if (!liveStatusCache) return;
   // Usuń stare badges
   document.querySelectorAll('.live-badge').forEach(el => el.remove());
-  if (activeView === 'timeline') return;
 
   Object.entries(liveStatusCache).forEach(([apiName, status]) => {
     const nodeId = LIVE_STATUS_MAP[apiName];
