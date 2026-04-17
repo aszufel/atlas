@@ -155,33 +155,70 @@ const TYPES = {
   person_pracownik_liniowy:{label:'Liniowy',color: '#79c0ff', shape: 'ellipse', icon: 'tabler/user' },
   group:    { label: 'Grupa',      color: '#21262d', shape: 'round-rectangle', icon: '' },
   layer:    { label: 'Warstwa',    color: '#21262d', shape: 'round-rectangle', icon: '' },
+  df_header:{ label: 'Pipeline',   color: '#f0883e', shape: 'round-rectangle', icon: 'tabler/arrow-right' },
 };
 
 // === ACTIVE VIEW ===
 let activeView = 'cortex';
 
-// Dataflow view = kluczowe źródła danych + kto pisze/czyta
-const DATAFLOW_NODES = new Set([
-  // Stores
-  'supabase', 'notion_api_firm', 'notion_api_priv', 'gcp_bq', 'gcp_bucket',
-  'mikrus_pg', 'gmail_api', 'gdrive_api', 'apify', 'openai_api',
-  // Apps (writers/readers)
-  'app_pm', 'app_zakupex', 'app_janusz', 'app_bot_voice', 'app_muszla', 'app_atlas',
-  // Cron writers (GCP Scheduler / Cloud Run Functions)
-  'cr_notion_backup', 'cr_supabase_backup', 'cr_cloudflare_backup',
-  'cr_content', 'cr_zakupex_import', 'cr_health_check',
-  // Scripts readers/writers
-  'update_context_py', 'system_audit_py', 'content_pipeline_py',
-  'notion_py', 'gmail_py', 'fireflies_py', 'google_drive_backup_py',
-]);
+// Dataflow view = osobne pipeline'y jako wiersze poziome
+// Każdy pipeline: lewy header + kroki od lewej (źródło) do prawej (cel)
+const DATAFLOW_PIPELINES = [
+  { title: 'PM — pricing nocny',           steps: ['app_pm', 'apify', 'supabase', 'gcp_bq', 'system_audit_py'] },
+  { title: 'Zakupex — OCR faktur',         steps: ['cr_zakupex_import', 'gmail_api', 'openai_api', 'app_zakupex', 'supabase'] },
+  { title: 'Janusz — WhatsApp PEG',        steps: ['app_janusz', 'mikrus_pg', 'cr_janusz_content'] },
+  { title: 'Content — rolki Tamborskiego', steps: ['content_pipeline_py', 'openai_api', 'gdrive_api', 'notion_api_firm'] },
+  { title: 'Backup — Notion',              steps: ['sch_notion', 'cr_notion_backup', 'notion_api_firm', 'gcp_bucket'] },
+  { title: 'Backup — Supabase',            steps: ['sch_supabase', 'cr_supabase_backup', 'supabase', 'gcp_bucket'] },
+  { title: 'Backup — Cloudflare',          steps: ['sch_cf', 'cr_cloudflare_backup', 'cloudflare_api', 'gcp_bucket'] },
+  { title: 'Health check apek',            steps: ['sch_health_check', 'cr_health_check', 'app_pm', 'app_zakupex', 'app_janusz', 'gcp_bucket'] },
+  { title: 'Recenzent GBP',                steps: ['sch_recenzent', 'cr_recenzent', 'gbp_api', 'openai_api', 'app_janusz'] },
+  { title: 'Cortex briefing poranny',      steps: ['update_context_py', 'notion_api_firm', 'gmail_api', 'context_md'] },
+];
 
 function isInView(n, view) {
-  if (view === 'dataflow') return DATAFLOW_NODES.has(n.id);
+  if (view === 'dataflow') return false; // dataflow używa własnego buildera
   if (view === 'all') return true;
   return (n.v || []).includes(view);
 }
 
+function buildDataflowElements() {
+  const els = [];
+  const findNode = (id) => nodes.find(n => n.id === id);
+  const ROW_H = 180;
+  const COL_W = 220;
+  const X_OFFSET = 200;  // margines dla header
+
+  DATAFLOW_PIPELINES.forEach((pipe, i) => {
+    // Header po lewej
+    const hId = `df_head_${i}`;
+    els.push({
+      data: { id: hId, label: pipe.title, type: 'df_header', desc: pipe.title },
+      position: { x: -80, y: i * ROW_H },
+    });
+
+    pipe.steps.forEach((srcId, j) => {
+      const src = findNode(srcId);
+      if (!src) { console.warn('Dataflow: missing node', srcId); return; }
+      const nodeId = `df_${i}_${j}`;
+      els.push({
+        data: {
+          id: nodeId, label: src.label, type: src.type,
+          desc: src.desc, origId: srcId,  // do nodeMeta lookup
+        },
+        position: { x: X_OFFSET + j * COL_W, y: i * ROW_H },
+      });
+      if (j > 0) {
+        els.push({ data: { id: `df_e_${i}_${j}`, source: `df_${i}_${j-1}`, target: nodeId, label: '' } });
+      }
+    });
+  });
+
+  return els;
+}
+
 function buildElements(view) {
+  if (view === 'dataflow') return buildDataflowElements();
   const els = [];
   const visibleNodeIds = new Set();
 
@@ -289,33 +326,13 @@ function getLayout(view) {
     });
   }
   if (view === 'dataflow') {
-    // 3 kolumny: APKI (lewo) → STORES (środek) → SKRYPTY/CONSUMERS (prawo)
-    const COL_X = { app: 0, store: 700, script: 1400 };
-    const STORE_TYPES = new Set(['gcp', 'bucket', 'api']);
-    const perCol = { app: 0, store: 0, script: 0 };
-    const nodes = cy.nodes().filter(n => !['layer','group'].includes(n.data('type')));
-    // Sort żeby per-column ordering był deterministyczny i czytelny
-    const sorted = nodes.toArray().sort((a, b) => {
-      const la = (a.data('label') || '').toLowerCase();
-      const lb = (b.data('label') || '').toLowerCase();
-      return la.localeCompare(lb);
-    });
-    const positions = {};
-    sorted.forEach(n => {
-      const t = n.data('type');
-      let col = 'script';
-      if (t === 'app') col = 'app';
-      else if (STORE_TYPES.has(t)) col = 'store';
-      const idx = perCol[col]++;
-      positions[n.id()] = { x: COL_X[col], y: idx * 150 };
-    });
+    // Pozycje z buildDataflowElements (ele.position ustawiane per node)
     return cy.layout({
       name: 'preset',
-      positions: (ele) => positions[ele.id()],
+      fit: true,
       padding: 60,
       animate: 'end',
-      animationDuration: 400,
-      fit: true,
+      animationDuration: 300,
     });
   }
   if (view === 'zespol') {
@@ -574,6 +591,18 @@ const cy = cytoscape({
     { selector: '#p_ula',       style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
     { selector: '#p_kamila',    style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
     { selector: '#p_maja',      style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
+    // Dataflow pipeline headers — taśma z nazwą po lewej
+    { selector: 'node[type="df_header"]', style: {
+        'width': 160, 'height': 60, 'font-size': 11, 'font-weight': 'bold',
+        'text-wrap': 'wrap', 'text-max-width': '150px', 'text-valign': 'center',
+        'background-color': '#1c2128', 'border-color': '#f0883e', 'border-width': 2,
+        'background-image': 'none', 'color': '#f0883e', 'shape': 'round-rectangle',
+    }},
+    { selector: 'edge[source ^= "df_"]', style: {
+        'curve-style': 'straight', 'target-arrow-shape': 'triangle',
+        'line-color': '#58a6ff', 'target-arrow-color': '#58a6ff',
+        'opacity': 0.7, 'width': 2,
+    }},
     // Edges — labels hidden by default, dim lines
     {
       selector: 'edge',
@@ -808,11 +837,13 @@ function showNodeDetails(node) {
     supabase: 'https://supabase.com/dashboard/projects',
     cloudflare_api: 'https://dash.cloudflare.com/',
   };
-  const url = serviceUrls[d.id];
+  const url = serviceUrls[d.origId || d.id];
   const openBtn = url ? `<a href="${url}" target="_blank" style="display:inline-block;margin-left:8px;padding:3px 10px;background:#58a6ff22;color:#58a6ff;border:1px solid #58a6ff44;border-radius:6px;font-size:11px;text-decoration:none">→ Open</a>` : '';
 
   // Rozszerzone pola z nodeMeta (opcjonalne). Fallback: desc
-  const meta = (typeof nodeMeta !== 'undefined' && nodeMeta[d.id]) || {};
+  // Dataflow duplikuje nody — używamy origId do lookupu meta
+  const lookupId = d.origId || d.id;
+  const meta = (typeof nodeMeta !== 'undefined' && nodeMeta[lookupId]) || {};
   const whatTxt = meta.what || d.desc || '';
   const sections = [];
   if (whatTxt) sections.push(`<div class="detail"><div class="detail-label">Co to</div><div class="detail-value">${whatTxt}</div></div>`);
