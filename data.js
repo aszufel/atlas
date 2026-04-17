@@ -207,7 +207,7 @@ const nodes = [
   { id: 'biz_sunset', label: 'Sunset', type: 'punkt', v: ['biznesy','zespol'], desc: '🟢 aktywny' },
   { id: 'biz_beachbox', label: 'Beach Box', type: 'punkt', v: ['biznesy','zespol'], desc: '🟢 aktywny' },
   { id: 'biz_pei', label: 'PEI', type: 'spolka', v: ['biznesy','zespol'], desc: '🟢 aktywny' },
-  { id: 'biz_peg', label: 'PEG', type: 'holding', v: ['biznesy','zespol'], desc: '🟢 aktywny' },
+  { id: 'biz_peg', label: 'PEG (brand)', type: 'holding', v: ['biznesy','zespol'], desc: '🏷️ Brand parasolowy — NIE formalny holding' },
   { id: 'biz_gea', label: 'GEA Sea & Resort', type: 'punkt', v: ['biznesy','zespol'], desc: '🟢 aktywny' },
   { id: 'str_wild_pearl', label: 'Wild Pearl', type: 'strategia', v: ['biznesy'], desc: '🔵 Umowa podpisana' },
 
@@ -725,5 +725,31 @@ const nodeMeta = {
     does: ['Ping 7 apek co 15 min', 'Alert WA (Janusz /send) przy UP↔DOWN', 'Throttle 60 min', '08:00 digest'],
     why: 'Instant alert gdy coś padnie w nocy.',
     status: '🟢 live',
+  },
+
+  // === BIZNESY — kluczowe ===
+  biz_peg: {
+    what: 'PEG to brand parasolowy — NIE formalny holding.',
+    does: ['Wspólna nazwa handlowa dla PEI, PEO, PER', 'Ułatwia komunikację zewnętrzną', 'Wewnętrznie: 3 niezależne spółki'],
+    why: 'Klienci widzą "Partner Expert GROUP" zamiast 3 osobnych firm. Prawnie każda spółka ma własny KRS, księgowość i zarząd.',
+    status: '🏷️ brand (nie formalny podmiot)',
+  },
+  biz_pei: {
+    what: 'Partner Expert Investments — spółka inwestycyjna.',
+    does: ['Consulting dla deweloperów', 'Portfolio strategii (10 aktywnych)', 'Nabywanie lokalizacji'],
+    why: 'Filar inwestycyjny PEG.',
+    status: '🟢 aktywna',
+  },
+  biz_peo: {
+    what: 'Partner Expert Operator — zarządzanie hotelami/apartamentami.',
+    does: ['Operacje IND.U, Sunday, GEA, Wild Pearl', 'Pricing przez PM app', 'Check-in / Customer Service'],
+    why: 'Filar operacyjny PEG — generuje 80% przychodów w sezonie.',
+    status: '🟢 aktywna',
+  },
+  biz_per: {
+    what: 'Partner Expert Restaurants — gastronomia.',
+    does: ['Beach Box, Sunset Bar, Muszla Koncertowa', 'Zarządzanie sezonem gastro', 'Restrukturyzacja 2026'],
+    why: 'Filar gastro PEG. Muszla to 7-letnia dzierżawa od miasta.',
+    status: '🟡 restrukturyzacja',
   },
 };
