@@ -103,7 +103,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   </div>
   <button id="btn-orphans" title="Podświetl izolowane node'y (bez połączeń)" style="padding:6px 12px;background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:6px;cursor:pointer;font-size:12px">🔦 Sieroty (<span id="orphans-count">0</span>)</button>
   <button id="btn-export" title="Zapisz jako PNG" style="padding:6px 12px;background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:6px;cursor:pointer;font-size:12px">📷 PNG</button>
-  <span id="updated-ts" style="font-size:11px;color:#484f58;margin-left:auto">updated: 2026-04-14c</span>
+  <span id="updated-ts" style="font-size:11px;color:#484f58;margin-left:auto">updated: …</span>
 </div>
 
 <div class="main">
@@ -656,12 +656,33 @@ function showWelcome(view) {
   });
   const typeList = Object.entries(typeCounts).map(([k, v]) => `<span style="color:${TYPES[k].color}">\u25CF</span> ${TYPES[k].label}: ${v}`).join('<br>');
 
+  // Suma kosztów dla widoku (tylko te z meta.cost)
+  let costSection = '';
+  if (typeof nodeMeta !== 'undefined') {
+    const costsInView = visNodes
+      .map(n => nodeMeta[n.id])
+      .filter(m => m && typeof m.cost === 'number');
+    if (costsInView.length > 0) {
+      const total = costsInView.reduce((s, m) => s + m.cost, 0);
+      const breakdown = costsInView
+        .filter(m => m.cost > 0)
+        .sort((a, b) => b.cost - a.cost)
+        .slice(0, 5)
+        .map((m, i) => {
+          const node = visNodes.find(n => nodeMeta[n.id] === m);
+          return `${node.label}: ${m.cost} zł`;
+        }).join(' · ');
+      costSection = `<div class="view-desc" style="border-color:#f0883e44"><h3 style="color:#f0883e">💰 Koszty znane</h3><p style="font-size:14px;color:#e1e4e8;margin-bottom:4px"><strong>~${total} zł/mc</strong> (${costsInView.length} pozycji)</p><p style="font-size:11px;color:#8b949e;margin:0">${breakdown}</p></div>`;
+    }
+  }
+
   sidebar.innerHTML = `
     <div class="welcome">
       <h2>${info.icon} ${info.title}</h2>
       <div class="view-desc">
         <p>${info.desc}</p>
       </div>
+      ${costSection}
       <div class="detail"><div class="detail-label">Na mapie</div><div class="detail-value" style="font-size:12px;line-height:1.6">${typeList}</div></div>
       <div style="margin-top:12px">
         <div class="shortcut"><kbd>/</kbd> Szukaj</div>
@@ -725,11 +746,34 @@ function showNodeDetails(node) {
   const url = serviceUrls[d.id];
   const openBtn = url ? `<a href="${url}" target="_blank" style="display:inline-block;margin-left:8px;padding:3px 10px;background:#58a6ff22;color:#58a6ff;border:1px solid #58a6ff44;border-radius:6px;font-size:11px;text-decoration:none">→ Open</a>` : '';
 
+  // Rozszerzone pola z nodeMeta (opcjonalne). Fallback: desc
+  const meta = (typeof nodeMeta !== 'undefined' && nodeMeta[d.id]) || {};
+  const whatTxt = meta.what || d.desc || '';
+  const sections = [];
+  if (whatTxt) sections.push(`<div class="detail"><div class="detail-label">Co to</div><div class="detail-value">${whatTxt}</div></div>`);
+  if (Array.isArray(meta.does) && meta.does.length) {
+    const items = meta.does.map(x => `<li style="margin:2px 0">${x}</li>`).join('');
+    sections.push(`<div class="detail"><div class="detail-label">Co robi</div><div class="detail-value"><ul style="padding-left:16px;margin:0">${items}</ul></div></div>`);
+  }
+  if (meta.why) sections.push(`<div class="detail"><div class="detail-label">Dlaczego istnieje</div><div class="detail-value" style="color:#8b949e;font-style:italic">${meta.why}</div></div>`);
+  if (meta.status) sections.push(`<div class="detail"><div class="detail-label">Status</div><div class="detail-value">${meta.status}</div></div>`);
+  if (typeof meta.cost === 'number') {
+    const costLabel = meta.cost === 0 ? 'darmowe (free tier)' : `${meta.cost} zł/mc`;
+    sections.push(`<div class="detail"><div class="detail-label">Koszt</div><div class="detail-value">${costLabel}</div></div>`);
+  }
+  const metaUrl = meta.url;
+  const finalUrl = metaUrl || url;
+  const displayUrl = metaUrl ? metaUrl.replace(/^https?:\/\//, '') : null;
+  if (displayUrl) {
+    sections.push(`<div class="detail"><div class="detail-label">Link</div><div class="detail-value"><a href="${metaUrl}" target="_blank" style="color:#58a6ff;text-decoration:none">${displayUrl} ↗</a></div></div>`);
+  }
+  const finalOpenBtn = finalUrl ? `<a href="${finalUrl}" target="_blank" style="display:inline-block;margin-left:8px;padding:3px 10px;background:#58a6ff22;color:#58a6ff;border:1px solid #58a6ff44;border-radius:6px;font-size:11px;text-decoration:none">→ Open</a>` : '';
+
   sidebar.innerHTML = `
     <button class="back-btn" id="backBtn">← Powrót</button>
-    <h2>${d.label}${openBtn}</h2>
+    <h2>${d.label}${finalOpenBtn}</h2>
     <span class="node-type" style="background:${t.color}22;color:${t.color};border:1px solid ${t.color}44"><img src="${ICON_BASE}/${t.icon}.svg?color=${encodeURIComponent(t.color)}" style="width:12px;height:12px;vertical-align:middle;margin-right:4px">${t.label}</span>
-    <div class="detail"><div class="detail-label">Opis</div><div class="detail-value">${d.desc}</div></div>
+    ${sections.join('')}
     ${connectionsHtml}
   `;
 
@@ -971,6 +1015,22 @@ legendToggle.addEventListener('click', () => {
   legendEl2.classList.toggle('collapsed');
   legendToggle.textContent = legendEl2.classList.contains('collapsed') ? '▼ Legenda' : '▲ Legenda';
 });
+
+// === AUTO-UPDATE TIMESTAMP (z git log przez GitHub API) ===
+(async function updateTimestamp() {
+  try {
+    const res = await fetch('https://api.github.com/repos/aszufel/atlas/commits?per_page=1');
+    if (!res.ok) return;
+    const commits = await res.json();
+    if (!commits?.[0]?.commit?.author?.date) return;
+    const d = new Date(commits[0].commit.author.date);
+    const iso = d.toISOString().slice(0, 10);
+    const hhmm = d.toISOString().slice(11, 16);
+    document.getElementById('updated-ts').textContent = `updated: ${iso} ${hhmm} UTC`;
+  } catch (e) {
+    document.getElementById('updated-ts').textContent = '';
+  }
+})();
 </script>
 </body>
 </html>

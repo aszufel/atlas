@@ -15,8 +15,13 @@ const nodeToLayer = {
   gcp_bq: 'L_GCP',
   cr_notion_backup: 'L_GCP', cr_supabase_backup: 'L_GCP', cr_cloudflare_backup: 'L_GCP',
   cr_recenzent: 'L_GCP', cr_content: 'L_GCP',
+  cr_health_check: 'L_GCP', cr_workspace_audit: 'L_GCP', cr_indexing: 'L_GCP',
+  cr_zakupex_import: 'L_GCP', cr_janusz_content: 'L_GCP',
   sch_notion: 'L_GCP', sch_supabase: 'L_GCP', sch_cf: 'L_GCP', sch_recenzent: 'L_GCP',
   sch_content: 'L_GCP', sch_pm_scan: 'L_GCP', sch_pm_summary: 'L_GCP', sch_pm_retry: 'L_GCP',
+  sch_health_check: 'L_GCP', sch_health_digest: 'L_GCP', sch_workspace_audit: 'L_GCP',
+  sch_indexing: 'L_GCP', sch_zakupex_import: 'L_GCP', sch_janusz_content: 'L_GCP',
+  sch_content_publish: 'L_GCP',
   // Mikrus
   mikrus: 'L_MIKRUS', app_janusz: 'L_MIKRUS', app_gustaw: 'L_MIKRUS',
   mikrus_pg: 'L_MIKRUS', cron_archiwista: 'L_MIKRUS', archiwista_sh: 'L_MIKRUS', strych: 'L_MIKRUS',
@@ -155,6 +160,11 @@ const nodes = [
   { id: 'cr_supabase_backup', label: 'supabase-backup',    type: 'gcp', v: ['cortex'], desc: 'Cloud Run Function — PM + ZakupEX → GCS' },
   { id: 'cr_cloudflare_backup', label: 'cloudflare-backup',type: 'gcp', v: ['cortex'], desc: 'Cloud Run Function — 6 zon CF → GCS' },
   { id: 'cr_recenzent',    label: 'recenzent',             type: 'gcp', v: ['cortex'], desc: 'Cloud Run Function — Auto-odpowiedzi na recenzje GBP (5 obiektow PEG). GPT-4o-mini.' },
+  { id: 'cr_health_check', label: 'health-check',          type: 'gcp', v: ['cortex'], desc: 'Cloud Function — Pinguje 7 apek PEG, alert WA DM przy UP↔DOWN, throttle 60 min. State w gs://peg-backups-cortex/health-check/.' },
+  { id: 'cr_workspace_audit', label: 'workspace-audit',    type: 'gcp', v: ['cortex'], desc: 'Cloud Function — Audyt Google Workspace (2FA, nieaktywni, admini) → raport w Notion/email.' },
+  { id: 'cr_indexing',     label: 'indexing-daily',        type: 'gcp', v: ['cortex'], desc: 'Cloud Function — Submit URL z sitemap (5 domen PEG) do Google Indexing API.' },
+  { id: 'cr_zakupex_import', label: 'zakupex-auto-import', type: 'gcp', v: ['cortex'], desc: 'Cloud Function — OCR faktur z maila → Zakupex (codziennie 02:00).' },
+  { id: 'cr_janusz_content', label: 'janusz-content-report', type: 'gcp', v: ['cortex'], desc: 'Cloud Function — Tygodniowy raport treści Janusza (wtorek 08:00).' },
 
   // GCP Cloud Run Job
   { id: 'cr_content',      label: 'content-pipeline',      type: 'gcp', v: ['cortex'], desc: 'Cloud Run Job (Docker+ffmpeg+yt-dlp+opencv) — rolki podcast Tamborskiego' },
@@ -168,6 +178,13 @@ const nodes = [
   { id: 'sch_pm_scan',     label: 'pm-auto-scan (23:00)',  type: 'sched', v: ['cortex'], desc: 'codziennie 23:00 → GET price.partnerexpert.work/api/cron/auto-scan' },
   { id: 'sch_pm_summary',  label: 'pm-summary (01:00)',    type: 'sched', v: ['cortex'], desc: 'codziennie 01:00 → GET .../generate-summary' },
   { id: 'sch_pm_retry',    label: 'pm-retry (06:00)',      type: 'sched', v: ['cortex'], desc: 'codziennie 06:00 → GET .../retry-apify-runs' },
+  { id: 'sch_health_check', label: 'health-check (co 15 min)', type: 'sched', v: ['cortex'], desc: 'co 15 min → CR health-check (ping 7 apek PEG)' },
+  { id: 'sch_health_digest', label: 'health-digest (08:00)', type: 'sched', v: ['cortex'], desc: 'codziennie 08:00 → CR health-check (digest 24h)' },
+  { id: 'sch_workspace_audit', label: 'workspace-audit (mc)', type: 'sched', v: ['cortex'], desc: 'ostatni piątek mc 07:00 → CR workspace-audit' },
+  { id: 'sch_indexing',    label: 'indexing-daily (02:00)', type: 'sched', v: ['cortex'], desc: 'codziennie 02:00 → CR indexing-daily' },
+  { id: 'sch_zakupex_import', label: 'zakupex-import (02:00)', type: 'sched', v: ['cortex'], desc: 'codziennie 02:00 → CR zakupex-auto-import' },
+  { id: 'sch_janusz_content', label: 'janusz-content (wt 08:00)', type: 'sched', v: ['cortex'], desc: 'wtorek 08:00 → CR janusz-content-report' },
+  { id: 'sch_content_publish', label: 'content-publish (co 30m 8-22)', type: 'sched', v: ['cortex'], desc: 'co 30 min 8-22 → check publikacji FB rolek' },
   { id: 'mikrus',          label: 'Mikrus VPS',            type: 'hosting', v: ['cortex'], desc: 'leszek140, 1GB/10GB — Persony: Janusz (🟢), Gustaw (🔴). Jedyny automat: archiwista (4:00). Wszystkie inne crony migrowane na GCP 2026-04-12.' },
   { id: 'laptop',          label: 'Laptop (penguin)',       type: 'hosting', v: ['cortex'], desc: 'systemd timers, Cortex runtime — NIGDY crony produkcyjne' },
 
@@ -393,6 +410,28 @@ const edges = [
   { source: 'app_pm', target: 'gcp_bq', label: 'pipeline logs', v: ['cortex'] },
   { source: 'gcp_bq', target: 'system_audit_py', label: 'query', v: ['cortex'] },
   { source: 'system_audit_py', target: 'update_context_py', label: 'feed briefing', v: ['cortex'] },
+  // Brakujące Scheduler + Cloud Run (2026-04-17)
+  { source: 'gcp', target: 'cr_health_check', label: 'runs', v: ['cortex'] },
+  { source: 'gcp', target: 'cr_workspace_audit', label: 'runs', v: ['cortex'] },
+  { source: 'gcp', target: 'cr_indexing', label: 'runs', v: ['cortex'] },
+  { source: 'gcp', target: 'cr_zakupex_import', label: 'runs', v: ['cortex'] },
+  { source: 'gcp', target: 'cr_janusz_content', label: 'runs', v: ['cortex'] },
+  { source: 'sch_health_check', target: 'cr_health_check', label: 'triggers', v: ['cortex'] },
+  { source: 'sch_health_digest', target: 'cr_health_check', label: 'triggers', v: ['cortex'] },
+  { source: 'sch_workspace_audit', target: 'cr_workspace_audit', label: 'triggers', v: ['cortex'] },
+  { source: 'sch_indexing', target: 'cr_indexing', label: 'triggers', v: ['cortex'] },
+  { source: 'sch_zakupex_import', target: 'cr_zakupex_import', label: 'triggers', v: ['cortex'] },
+  { source: 'sch_janusz_content', target: 'cr_janusz_content', label: 'triggers', v: ['cortex'] },
+  { source: 'sch_content_publish', target: 'cr_content', label: 'triggers', v: ['cortex'] },
+  { source: 'cr_health_check', target: 'app_pm', label: 'pings', v: ['cortex'] },
+  { source: 'cr_health_check', target: 'app_zakupex', label: 'pings', v: ['cortex'] },
+  { source: 'cr_health_check', target: 'app_janusz', label: 'pings + WA alert', v: ['cortex'] },
+  { source: 'cr_indexing', target: 'indexing_api', label: 'submit URLs', v: ['cortex'] },
+  { source: 'cr_workspace_audit', target: 'google_admin_api', label: 'audit', v: ['cortex'] },
+  { source: 'cr_zakupex_import', target: 'app_zakupex', label: 'imports', v: ['cortex'] },
+  { source: 'cr_zakupex_import', target: 'gmail_api', label: 'reads faktury', v: ['cortex'] },
+  { source: 'cr_janusz_content', target: 'app_janusz', label: 'reports', v: ['cortex'] },
+  { source: 'cr_health_check', target: 'gcp_bucket', label: 'state.json', v: ['cortex'] },
   // Persony → Mikrus
   { source: 'app_gustaw', target: 'mikrus', label: 'deploy', v: ['cortex'] },
 
@@ -458,3 +497,224 @@ const edges = [
   { source: 'p_patrycjafurmankiewic', target: 'p_dariacieslak',     label: 'Spot',    v: ['zespol'] },
   { source: 'p_patrycjafurmankiewic', target: 'p_katarzynamatyjaszczy', label: 'Spot', v: ['zespol'] },
 ];
+
+// ==============================================================
+// NODE META — rozszerzone opisy (opcjonalne)
+// Pola: what / does[] / why / status / cost / owner / url
+// Gdy brak — sidebar fallbackuje do node.desc
+// Koszty w PLN/miesiąc, tylko liczby (atlas sumuje)
+// ==============================================================
+const nodeMeta = {
+  // === APKI ===
+  app_pm: {
+    what: 'Pricing Manager — dashboard cen hotelowych obiektów PEO.',
+    does: ['Scrapuje rynek Booking.com przez Apify (2 lokalizacje)', 'Liczy rekomendacje cen z kaskadą HIGH→MEDIUM→LOW', 'Generuje AI summary dziennych skanów (GPT-4o-mini)', 'Loguje każdy krok pipeline do BigQuery'],
+    why: 'Pomaga ustalać ceny IND.U/Sunday/GEA. Dziś ręczne przepisanie do IdoBooking; docelowo auto-push po shadow mode.',
+    status: '🟢 live',
+    cost: 200,
+    url: 'https://price.partnerexpert.work',
+  },
+  app_zakupex: {
+    what: 'System faktur zakupowych PER z OCR.',
+    does: ['Codziennie 02:00 pobiera faktury z maila', 'OCR przez GPT-4o', 'Reconciliation z wFirma', 'Wysyła raport mailem'],
+    why: 'Automatyzuje księgowość PER — restauracje mają setki faktur miesięcznie.',
+    status: '🟢 live',
+    cost: 0,
+    url: 'https://zakupex.vercel.app',
+  },
+  app_janusz: {
+    what: 'PERSONA: WhatsApp bot wiedzy firmowej PEG.',
+    does: ['Odpowiada na pytania zespołu z bazy Notion (Wiki/Biznesy/Umowy)', 'Moduł PM — recurring tasks per stanowisko', 'Timecard — karta pracy przez DM', 'Vision przy @Janusz + obrazek'],
+    why: 'Odciąża Adiego z odpowiadania na podstawowe pytania, zbiera dane HR (godziny pracy).',
+    status: '🟢 live',
+    cost: 20,
+  },
+  app_gustaw: {
+    what: 'PERSONA: WhatsApp asystent osobisty Adi.',
+    does: ['Czeka na SIM', 'Docelowo: concierge — zadania, kalendarz, notatki'],
+    why: 'Drugi filar persona — Janusz dla zespołu, Gustaw dla Adi.',
+    status: '🔴 off (czeka na SIM)',
+  },
+  app_bot_voice: {
+    what: 'Voice → Notion — mobilna apka Adi.',
+    does: ['Nagrywanie głosu', 'Whisper transkrybuje', 'Zapis do Notion'],
+    why: 'Szybki capture myśli w drodze. Do wyłączenia po deploy Gustaw v2.',
+    status: '🟡 do wyłączenia',
+    url: 'https://bot.partnerexpert.work',
+  },
+  app_muszla: {
+    what: 'muszlakolobrzeg.pl — strona Muszli Koncertowej.',
+    does: ['Event listing', 'Rezerwacje', 'Afisz sezonowy'],
+    why: 'Bookingi + marketing Muszli. Jedyna strona PEG która dostaje budżet Ads.',
+    status: '🟢 live',
+    url: 'https://muszlakolobrzeg.pl',
+  },
+  app_atlas: {
+    what: 'Interaktywna mapa ekosystemu PEG.',
+    does: ['3 widoki: Cortex / Biznesy / Zespół', 'Search, filtry, focus mode', 'Live status (w planach)'],
+    why: 'Jednorazowe spojrzenie na całą infrastrukturę — co działa, co zjadacz kosztów.',
+    status: '🟢 live',
+    url: 'https://aszufel.github.io/atlas/',
+  },
+
+  // === INFRASTRUKTURA ===
+  vercel: {
+    what: 'Hosting Next.js apek PEG.',
+    does: ['Auto-deploy z GitHub main', 'Serverless functions', 'Edge network', 'Preview deployments per PR'],
+    why: 'Frontend + API dla PM/Zakupex/muszla/BOT Voice.',
+    status: '🟢 live',
+    cost: 0,
+    url: 'https://vercel.com/dashboard',
+  },
+  mikrus: {
+    what: 'VPS 24/7 (leszek140) — hosting person i PG.',
+    does: ['PM2 runtime dla Janusza (WA sesja persistent)', 'PostgreSQL Janusz DB (messages_log, timecard_entries)', 'archiwista cron 04:00 (backup PG + .env → strych)'],
+    why: 'WhatsApp-web.js wymaga persistent sesji, Vercel/Cloud Run tego nie zrobią.',
+    status: '🟢 live',
+    cost: 20,
+  },
+  laptop: {
+    what: 'Penguin — laptop Adi. Runtime Cortex interaktywny.',
+    does: ['Claude Code sessions', 'Skrypty Cortex ad-hoc', 'systemd timers (7:00 context, 7:10 smoke, 22:00 claude-backup)'],
+    why: 'Interaktywna praca. ZERO cronów produkcyjnych — te są w GCP.',
+    status: '🟢 live',
+  },
+  dhosting: {
+    what: 'Hosting statycznych stron PEG + email firmowy.',
+    does: ['FTP deploy 4 stron HTML (IND.U, Sunday, GEA, PEG)', 'Skrzynki @partnerexpert.pl/.work'],
+    why: 'Strony statyczne, email firmowy PEG.',
+    status: '🟢 live',
+  },
+
+  // === GCP RESOURCES ===
+  gcp: {
+    what: 'Projekt ai-council-487609 — centralna infra Cortexu.',
+    does: ['Cloud Functions + Cloud Run Jobs', 'Scheduler (15+ cronów)', 'Secret Manager (8 sekretów)', 'GCS bucket backups', 'BigQuery logs', 'Weather API dla PM'],
+    why: 'Jeden projekt dla wszystkiego co jest serverside + automaty. Zastąpił crony na Mikrusie i dhosting.',
+    status: '🟢 live',
+    cost: 50,
+    url: 'https://console.cloud.google.com/home/dashboard?project=ai-council-487609',
+  },
+  gcp_bq: {
+    what: 'BigQuery cortex_logs.pipeline_logs — centralny dziennik PEG.',
+    does: ['Zapis logów pipeline każdej apki', 'Partycje DAY, retention 30d', 'Query przez system_audit.py', 'Sekcja "Systemy w nocy" w briefingu'],
+    why: 'Widoczność co się dzieje w nocy w apkach. Fundament pod auto-push cen PM.',
+    status: '🟢 live',
+    cost: 0,
+  },
+  gcp_sm: {
+    what: 'Secret Manager — 8 sekretów PEG w jednym miejscu.',
+    does: ['Notion tokens (2)', 'Supabase keys (PM, Zakupex)', 'OpenAI', 'Cloudflare', 'Cortex API key', 'Google OAuth'],
+    why: 'Bezpieczny odczyt z Cloud Run/Functions, nie trzeba trzymać w kodzie.',
+    status: '🟢 live',
+  },
+  gcp_bucket: {
+    what: 'gs://peg-backups-cortex — backup storage.',
+    does: ['Foldery: notion/, supabase/, cloudflare/, claude-config/, mikrus/, health-check/', 'Lifecycle 30 dni (auto-delete)'],
+    why: 'Wszystkie backupy w jednym bucketcie, tanio, z retencją.',
+    status: '🟢 live',
+  },
+  gcp_uptime: {
+    what: 'Uptime Check — monitoring Janusza.',
+    does: ['Ping /health Janusza co 5 min', 'Email alert po 60s downtime'],
+    why: 'Janusz 24/7 — WA sesja musi żyć.',
+    status: '🟢 live',
+  },
+
+  // === API / ZEWNĘTRZNE ===
+  supabase: {
+    what: 'Managed PostgreSQL + Auth dla apek.',
+    does: ['DB PM (scans, properties, prices)', 'DB Zakupex (invoices, vendors)', 'Auth PM (magic link)', 'RLS na tabelach'],
+    why: 'Jeden PG dla 2 apek, auth wbudowany, row-level security.',
+    status: '🟢 live',
+    cost: 0,
+    url: 'https://supabase.com/dashboard/projects',
+  },
+  openai_api: {
+    what: 'GPT-4o, GPT-4o-mini, Whisper.',
+    does: ['PM: summary skanów (4o-mini)', 'Zakupex: OCR faktur (4o)', 'Janusz: Q&A + Vision (4o-mini)', 'Content pipeline: transkrypcja + pisanie (Whisper + 4o)', 'Cortex: fireflies, analiza journal'],
+    why: 'Jedyny dostawca LLM/Vision/Whisper używany w PEG.',
+    status: '🟢 live',
+    cost: 50,
+  },
+  apify: {
+    what: 'Actor marketplace — scraping.',
+    does: ['PM: Fast Booking Scraper (2x dziennie × 2 lokalizacje)', 'Budżet: $50/mc, cykl 7-6'],
+    why: 'Scraping Booking bez utrzymywania własnego playwright.',
+    status: '🟢 live',
+    cost: 200,
+  },
+  notion_api_firm: {
+    what: 'Notion API — 20 baz firmowych PEG.',
+    does: ['Zadania, Projekty, CRM, Aktywności, Pracownicy, Obowiązki, Biznesy, Umowy, Notatki, GUNB, Wiki'],
+    why: 'Główne repozytorium wiedzy i operacji PEG. Używane przez Cortex, Janusz, BOT Voice.',
+    status: '🟢 live',
+    cost: 80,
+  },
+  notion_api_priv: {
+    what: 'Notion API — 12 baz prywatnych Adi.',
+    does: ['Tasks, Goals, Habits, Notes, Dziennik Treningowy, Suplementy, Activity Log'],
+    why: 'Życie osobiste — cele, nawyki, treningi, EOD. Nie mieszane z firmowymi.',
+    status: '🟢 live',
+  },
+  cloudflare_api: {
+    what: 'DNS + cache + analytics dla domen PEG.',
+    does: ['10 domen PEG', 'Cache statycznych stron', 'SSL', 'Bot analytics'],
+    why: 'Szybkie strony, darmowy SSL, ochrona przed botami.',
+    status: '🟢 live',
+    cost: 0,
+  },
+
+  // === CORTEX SCRIPTS (kluczowe) ===
+  system_audit_py: {
+    what: 'Skrypt audytu systemów — czyta BigQuery pipeline_logs.',
+    does: ['summary [--last 24h] [--app <nazwa>]', 'errors — tylko błędy', 'tail — ostatnie N logów', 'run <run_id> — pełny cykl', 'briefing — skrót dla porannego briefingu'],
+    why: 'Cortex rano wie co się działo w nocy w apkach, raportuje w "🤖 Systemy w nocy".',
+    status: '🟢 live',
+  },
+  update_context_py: {
+    what: 'Generator context.md — snapshot dnia.',
+    does: ['Kalendarz (PEG + prywatny + rodzinny)', 'Zadania Notion', 'CRM aktywności', 'Habits', 'Inbox (2 konta)'],
+    why: 'Briefing poranny czyta gotowy context.md zamiast 20 live queries.',
+    status: '🟢 live',
+  },
+  seo_report_py: {
+    what: 'Raport SEO dla stron PEG.',
+    does: ['CF analytics + PSI + GSC + GA4', 'Wyjście: short (briefing pt) / notion (pełny raport) / JSON'],
+    why: 'Piątkowy briefing: co z SEO stron PEG.',
+    status: '🟢 live',
+  },
+  content_pipeline_py: {
+    what: 'Pipeline rolek z podcastu Pana Tomka.',
+    does: ['Download → transkrypcja Whisper', 'Wybór fragmentów przez GPT-4o', 'Cropy ffmpeg + OpenCV (face tracking 45%)', 'Napisy ASS karaoke-style', 'Upload do Drive Shared', 'Zapis do Notion Social Planner'],
+    why: 'Persona Tamborski — automat FB content zasilający stronę w rolki tygodniowo.',
+    status: '🟢 live',
+    cost: 30,
+  },
+
+  // === SCHEDULER JOBS PM (krytyczne) ===
+  sch_pm_scan: {
+    what: 'Cron — PM auto-scan cen.',
+    does: ['23:00 Warsaw → GET /api/cron/auto-scan', 'Trigger Apify na 2 lokalizacje'],
+    why: 'Codzienny update cen rynku.',
+    status: '🟢 live',
+  },
+  sch_pm_summary: {
+    what: 'Cron — PM AI summary.',
+    does: ['01:00 Warsaw → GET /api/cron/generate-summary', 'Summary dziennych skanów (GPT)'],
+    why: 'Codzienne podsumowanie rynku nocne, rano w mailu.',
+    status: '🟢 live',
+  },
+  sch_pm_retry: {
+    what: 'Cron — PM retry Apify.',
+    does: ['06:00 Warsaw → GET /api/cron/retry-apify-runs', 'Pasywny retry failed runs'],
+    why: 'Jeśli webhook padł — rano dociągnięcie danych.',
+    status: '🟢 live',
+  },
+  cr_health_check: {
+    what: 'Cloud Function — health check apek PEG.',
+    does: ['Ping 7 apek co 15 min', 'Alert WA (Janusz /send) przy UP↔DOWN', 'Throttle 60 min', '08:00 digest'],
+    why: 'Instant alert gdy coś padnie w nocy.',
+    status: '🟢 live',
+  },
+};
