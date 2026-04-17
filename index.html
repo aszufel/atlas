@@ -29,6 +29,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .search-box input { padding: 6px 12px 6px 32px; background: #0d1117; border: 1px solid #30363d; color: #e1e4e8; border-radius: 6px; font-size: 13px; width: 220px; outline: none; }
 .search-box input:focus { border-color: #58a6ff; }
 .search-box::before { content: "\1F50D"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; }
+.autocomplete-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #161b22; border: 1px solid #30363d; border-radius: 6px; max-height: 280px; overflow-y: auto; z-index: 2000; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
+.autocomplete-item { padding: 6px 10px; font-size: 12px; color: #e1e4e8; cursor: pointer; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #21262d; }
+.autocomplete-item:hover, .autocomplete-item.active { background: #1f6feb22; }
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item .ac-type { font-size: 10px; color: #8b949e; margin-left: auto; }
 
 .main { display: flex; flex: 1; overflow: hidden; }
 #cy { flex: 1; }
@@ -97,9 +102,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <button class="active" data-view="cortex">Cortex</button>
     <button data-view="biznesy">Biznesy</button>
     <button data-view="zespol">Zesp&oacute;l</button>
+    <button data-view="dataflow">Dataflow</button>
+    <button data-view="timeline">Timeline</button>
   </div>
   <div class="search-box">
-    <input type="text" id="search" placeholder="Szukaj... ( / )">
+    <input type="text" id="search" placeholder="Szukaj... ( / )" autocomplete="off">
+    <div id="autocomplete" class="autocomplete-list" style="display:none"></div>
   </div>
   <button id="btn-orphans" title="Podświetl izolowane node'y (bez połączeń)" style="padding:6px 12px;background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:6px;cursor:pointer;font-size:12px">🔦 Sieroty (<span id="orphans-count">0</span>)</button>
   <button id="btn-export" title="Zapisz jako PNG" style="padding:6px 12px;background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:6px;cursor:pointer;font-size:12px">📷 PNG</button>
@@ -153,6 +161,27 @@ const TYPES = {
 // === ACTIVE VIEW ===
 let activeView = 'cortex';
 
+// Dataflow view = kluczowe źródła danych + kto pisze/czyta
+const DATAFLOW_NODES = new Set([
+  // Stores
+  'supabase', 'notion_api_firm', 'notion_api_priv', 'gcp_bq', 'gcp_bucket',
+  'mikrus_pg', 'gmail_api', 'gdrive_api', 'apify', 'openai_api',
+  // Apps (writers/readers)
+  'app_pm', 'app_zakupex', 'app_janusz', 'app_bot_voice', 'app_muszla', 'app_atlas',
+  // Cron writers (GCP Scheduler / Cloud Run Functions)
+  'cr_notion_backup', 'cr_supabase_backup', 'cr_cloudflare_backup',
+  'cr_content', 'cr_zakupex_import', 'cr_health_check',
+  // Scripts readers/writers
+  'update_context_py', 'system_audit_py', 'content_pipeline_py',
+  'notion_py', 'gmail_py', 'fireflies_py', 'google_drive_backup_py',
+]);
+
+function isInView(n, view) {
+  if (view === 'dataflow') return DATAFLOW_NODES.has(n.id);
+  if (view === 'all') return true;
+  return (n.v || []).includes(view);
+}
+
 function buildElements(view) {
   const els = [];
   const visibleNodeIds = new Set();
@@ -161,7 +190,7 @@ function buildElements(view) {
   const usedLayers = new Set();
   const layerCounts = {};
   nodes.forEach(n => {
-    if (view === 'all' || n.v.includes(view)) {
+    if (isInView(n, view)) {
       if (view === 'cortex' && nodeToLayer[n.id]) {
         usedLayers.add(nodeToLayer[n.id]);
         layerCounts[nodeToLayer[n.id]] = (layerCounts[nodeToLayer[n.id]]||0) + 1;
@@ -179,7 +208,7 @@ function buildElements(view) {
   }
 
   nodes.forEach(n => {
-    if (view === 'all' || n.v.includes(view)) {
+    if (isInView(n, view)) {
       visibleNodeIds.add(n.id);
       const d = { id: n.id, label: n.label, type: n.type, desc: n.desc };
       if (view === 'cortex' && nodeToLayer[n.id]) d.parent = nodeToLayer[n.id];
@@ -189,7 +218,11 @@ function buildElements(view) {
   });
 
   edges.forEach((e, i) => {
-    if ((view === 'all' || e.v.includes(view)) && visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)) {
+    // Dataflow: wszystkie krawędzie między widocznymi nodami niezależnie od e.v (cross-view dataflow)
+    const edgeInView = view === 'dataflow'
+      ? (visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target))
+      : ((view === 'all' || (e.v || []).includes(view)) && visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target));
+    if (edgeInView) {
       els.push({ data: { id: 'e' + i, source: e.source, target: e.target, label: e.label } });
     }
   });
@@ -585,12 +618,20 @@ document.querySelectorAll('.views button').forEach(btn => {
     this.classList.add('active');
 
     cy.elements().remove();
-    cy.add(buildElements(view));
-    getLayout(view).run();
-    cy.fit(undefined, 40);
-    applyBackupBadges();
+    document.querySelectorAll('.live-badge').forEach(el => el.remove());
+    if (view !== 'timeline') {
+      cy.add(buildElements(view));
+      getLayout(view).run();
+      cy.fit(undefined, 40);
+      applyBackupBadges();
+      if (typeof renderLiveStatusBadges === 'function') setTimeout(renderLiveStatusBadges, 400);
+    }
 
-    showWelcome(view);
+    if (view === 'timeline') {
+      showTimeline();
+    } else {
+      showWelcome(view);
+    }
     searchInput.value = '';
     updateLegend(view);
     updateStats(view);
@@ -643,6 +684,8 @@ const VIEW_INFO = {
   cortex: { title: 'Cortex', icon: '\u{1F9E0}', desc: 'System operacyjny AI — skrypty, API, MCP, timery, aplikacje i repozytoria. Wszystko co napędza PEG od strony technologicznej.', hub: 'repo_cortex' },
   biznesy: { title: 'Biznesy', icon: '\u{1F3E2}', desc: 'Struktura grupy PEG — spółki (PEI, PEO, PER), punkty operacyjne i projekty strategiczne.', hub: 'biz_peg' },
   zespol: { title: 'Zespół', icon: '\u{1F465}', desc: 'Pracownicy PEG — kto gdzie pracuje, powiązania z punktami i spółkami.', hub: 'p_adrianszufel' },
+  dataflow: { title: 'Dataflow', icon: '\u{1F30A}', desc: 'Gdzie żyją dane. Source/sink analiza: kto pisze do Supabase, kto do Notion, kto czyta z BigQuery. Klucz do audytu bezpieczeństwa i integracji.' },
+  timeline: { title: 'Timeline', icon: '\u{23F3}', desc: 'Historia zmian w atlasie — co kiedy dołożone. Z git log repo aszufel/atlas.' },
 };
 
 function showWelcome(view) {
@@ -697,6 +740,35 @@ function showWelcome(view) {
 }
 
 showWelcome('cortex');
+
+async function showTimeline() {
+  sidebar.innerHTML = `<div class="welcome"><h2>\u23F3 Timeline</h2><div class="view-desc"><p>${VIEW_INFO.timeline.desc}</p></div><p class="empty">Ładuję commity z GitHub…</p></div>`;
+  try {
+    const res = await fetch('https://api.github.com/repos/aszufel/atlas/commits?per_page=30');
+    if (!res.ok) throw new Error('GitHub API error ' + res.status);
+    const commits = await res.json();
+    const entries = commits.map(c => {
+      const d = new Date(c.commit.author.date);
+      const date = d.toISOString().slice(0, 10);
+      const time = d.toISOString().slice(11, 16);
+      const firstLine = c.commit.message.split('\n')[0];
+      const body = c.commit.message.split('\n').slice(1).join('\n').trim();
+      const sha = c.sha.slice(0, 7);
+      const bodyHtml = body ? `<div style="font-size:11px;color:#8b949e;margin-top:4px;white-space:pre-wrap">${body.replace(/</g, '&lt;')}</div>` : '';
+      return `<div style="padding:10px 0;border-bottom:1px solid #21262d">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <div style="font-size:11px;color:#58a6ff;font-family:monospace">${date} ${time}</div>
+          <a href="${c.html_url}" target="_blank" style="font-size:10px;color:#484f58;font-family:monospace;text-decoration:none">${sha} \u2197</a>
+        </div>
+        <div style="font-size:13px;color:#e1e4e8;margin-top:4px">${firstLine.replace(/</g, '&lt;')}</div>
+        ${bodyHtml}
+      </div>`;
+    }).join('');
+    sidebar.innerHTML = `<div class="welcome"><h2>\u23F3 Timeline</h2><div class="view-desc"><p>${VIEW_INFO.timeline.desc}</p></div><div>${entries}</div></div>`;
+  } catch (e) {
+    sidebar.innerHTML = `<div class="welcome"><h2>\u23F3 Timeline</h2><p class="empty">B\u0142\u0105d: ${e.message}</p></div>`;
+  }
+}
 
 function showNodeDetails(node) {
   const d = node.data();
@@ -819,17 +891,61 @@ cy.on('mouseout', 'edge', function(e) {
   e.target.style('label', '');
 });
 
-// === SEARCH ===
+// === SEARCH z AUTOCOMPLETE ===
 const searchInput = document.getElementById('search');
+const acList = document.getElementById('autocomplete');
+let acActive = -1;
+let acMatches = [];
+
+function hideAutocomplete() {
+  acList.style.display = 'none';
+  acActive = -1;
+  acMatches = [];
+}
+
+function jumpToNode(nodeId) {
+  const targetNode = cy.getElementById(nodeId);
+  if (!targetNode || !targetNode.length) return;
+  highlightNode(targetNode);
+  cy.animate({ center: { eles: targetNode }, zoom: 2 }, { duration: 300 });
+  hideAutocomplete();
+}
+
+function renderAutocomplete(q) {
+  if (!q) { hideAutocomplete(); return; }
+  acMatches = cy.nodes().filter(n => {
+    if (n.data('type') === 'group' || n.data('type') === 'layer') return false;
+    return n.data('label').toLowerCase().includes(q) ||
+           (n.data('desc') || '').toLowerCase().includes(q) ||
+           n.data('type').toLowerCase().includes(q);
+  }).toArray().slice(0, 10);
+
+  if (acMatches.length === 0) { hideAutocomplete(); return; }
+
+  acList.innerHTML = acMatches.map((n, idx) => {
+    const d = n.data();
+    const t = TYPES[d.type];
+    return `<div class="autocomplete-item${idx === acActive ? ' active' : ''}" data-id="${n.id()}" data-idx="${idx}"><img src="${ICON_BASE}/${t.icon}.svg?color=${encodeURIComponent(t.color)}" style="width:12px;height:12px"> ${d.label} <span class="ac-type">${t.label}</span></div>`;
+  }).join('');
+  acList.style.display = 'block';
+
+  acList.querySelectorAll('.autocomplete-item').forEach(el => {
+    el.addEventListener('mousedown', (e) => { e.preventDefault(); jumpToNode(el.dataset.id); searchInput.value = ''; });
+  });
+}
+
 searchInput.addEventListener('input', function() {
   const q = this.value.toLowerCase().trim();
   cy.elements().removeClass('search-match faded highlighted');
-  if (!q) { showWelcome(activeView); return; }
+  if (!q) { hideAutocomplete(); showWelcome(activeView); return; }
+
+  renderAutocomplete(q);
 
   const matches = cy.nodes().filter(n =>
-    n.data('label').toLowerCase().includes(q) ||
-    n.data('desc').toLowerCase().includes(q) ||
-    n.data('type').toLowerCase().includes(q)
+    (n.data('type') !== 'group' && n.data('type') !== 'layer') &&
+    (n.data('label').toLowerCase().includes(q) ||
+     (n.data('desc') || '').toLowerCase().includes(q) ||
+     n.data('type').toLowerCase().includes(q))
   );
 
   if (matches.length > 0) {
@@ -837,25 +953,29 @@ searchInput.addEventListener('input', function() {
     cy.edges().addClass('faded');
     matches.addClass('search-match');
     matches.connectedEdges().removeClass('faded');
-
-    if (matches.length === 1) {
-      highlightNode(matches[0]);
-    } else {
-      sidebar.innerHTML = `<h2>Wyniki (${matches.length})</h2>` +
-        matches.map(n => {
-          const nt = TYPES[n.data('type')];
-          return `<div class="conn-item" data-id="${n.id()}"><img src="${ICON_BASE}/${nt.icon}.svg?color=${encodeURIComponent(nt.color)}" style="width:14px;height:14px;vertical-align:middle;margin-right:6px"> ${n.data('label')}</div>`;
-        }).join('');
-      sidebar.querySelectorAll('.conn-item').forEach(el => {
-        el.addEventListener('click', () => {
-          const targetNode = cy.getElementById(el.dataset.id);
-          highlightNode(targetNode);
-          cy.animate({ center: { eles: targetNode }, zoom: 2 }, { duration: 300 });
-        });
-      });
-    }
   }
 });
+
+searchInput.addEventListener('keydown', function(e) {
+  if (acMatches.length === 0) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    acActive = (acActive + 1) % acMatches.length;
+    renderAutocomplete(this.value.toLowerCase().trim());
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    acActive = (acActive - 1 + acMatches.length) % acMatches.length;
+    renderAutocomplete(this.value.toLowerCase().trim());
+  } else if (e.key === 'Enter' && acActive >= 0) {
+    e.preventDefault();
+    jumpToNode(acMatches[acActive].id());
+    this.value = '';
+  } else if (e.key === 'Escape') {
+    hideAutocomplete();
+  }
+});
+
+searchInput.addEventListener('blur', () => setTimeout(hideAutocomplete, 150));
 
 // === LEGEND (clickable — toggle type visibility) ===
 const hiddenTypes = new Set();
@@ -1031,6 +1151,59 @@ legendToggle.addEventListener('click', () => {
     document.getElementById('updated-ts').textContent = '';
   }
 })();
+
+// === LIVE STATUS (fetchuje health-check state.json przez atlas-status Cloud Function) ===
+const LIVE_STATUS_URL = 'https://europe-central2-ai-council-487609.cloudfunctions.net/atlas-status';
+// Mapa nazw z health-check → node ID w atlasie
+const LIVE_STATUS_MAP = {
+  'PM app': 'app_pm',
+  'ZakupEX': 'app_zakupex',
+  'Janusz API': 'app_janusz',
+  'IND.U WWW': null,   // brak 1:1 node (strona statyczna)
+  'Sunday WWW': null,
+  'PEG WWW': null,
+  'Muszla WWW': 'app_muszla',
+};
+let liveStatusCache = null;
+
+function renderLiveStatusBadges() {
+  if (!liveStatusCache) return;
+  // Usuń stare badges
+  document.querySelectorAll('.live-badge').forEach(el => el.remove());
+  if (activeView === 'timeline') return;
+
+  Object.entries(liveStatusCache).forEach(([apiName, status]) => {
+    const nodeId = LIVE_STATUS_MAP[apiName];
+    if (!nodeId) return;
+    const node = cy.getElementById(nodeId);
+    if (!node || !node.length || !node.visible()) return;
+    const bbox = node.renderedBoundingBox();
+    const badge = document.createElement('div');
+    badge.className = 'live-badge';
+    const ok = status.ok === true;
+    const color = ok ? '#3fb950' : '#f85149';
+    badge.style.cssText = `position:absolute;left:${bbox.x2 - 14}px;top:${bbox.y1 + 2}px;width:10px;height:10px;border-radius:50%;background:${color};box-shadow:0 0 6px ${color};border:2px solid #0f1117;pointer-events:none;z-index:20;`;
+    badge.title = `${apiName}: ${ok ? 'OK' : 'DOWN'} (HTTP ${status.code || '?'}, checked ${new Date(status.checked_at).toLocaleString('pl-PL')})`;
+    badgeLayer.appendChild(badge);
+  });
+}
+
+async function fetchLiveStatus() {
+  try {
+    const res = await fetch(LIVE_STATUS_URL, { cache: 'no-store' });
+    if (!res.ok) return;
+    liveStatusCache = await res.json();
+    renderLiveStatusBadges();
+  } catch (e) {
+    console.warn('Live status fetch failed:', e);
+  }
+}
+
+// Uruchom przy starcie + co 60s
+fetchLiveStatus();
+setInterval(fetchLiveStatus, 60000);
+// Odśwież przy zmianach widoku/zoomu
+cy.on('pan zoom', () => renderLiveStatusBadges());
 </script>
 </body>
 </html>
