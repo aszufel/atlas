@@ -316,13 +316,20 @@ function scheduleBadgeUpdate() {
 function getLayout(view) {
   if (view === 'biznesy') {
     return cy.layout({
-      name: 'breadthfirst',
-      directed: true,
-      roots: '#biz_peg',
-      spacingFactor: 0.9,
+      name: 'fcose',
+      quality: 'proof',
+      randomize: true,
+      nodeRepulsion: 18000,
+      idealEdgeLength: 170,
+      edgeElasticity: 0.25,
+      gravity: 0.15,
+      gravityRange: 3.8,
+      numIter: 3000,
+      padding: 60,
+      nodeDimensionsIncludeLabels: true,
+      packComponents: true,
       animate: 'end',
       animationDuration: 400,
-      padding: 50,
     });
   }
   if (view === 'dataflow') {
