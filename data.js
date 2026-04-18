@@ -34,8 +34,11 @@ const nodeToLayer = {
   quotes_mazur: 'L_LAPTOP', adi_psychology: 'L_LAPTOP',
   app_atlas: 'L_LAPTOP',
   // Vercel
-  vercel: 'L_VERCEL', app_pm: 'L_VERCEL', app_zakupex: 'L_VERCEL',
-  app_bot_voice: 'L_VERCEL', app_muszla: 'L_VERCEL',
+  vercel: 'L_VERCEL', app_pm: 'L_VERCEL', app_muszla: 'L_VERCEL',
+  // Zakupex — Cloud Run europe-west1 (migrowane z Vercel 2026-04-13)
+  app_zakupex: 'L_GCP',
+  // Nowe Cloud Run (2026-04-17+)
+  cr_atlas_status: 'L_GCP',
   // Dhosting
   dhosting: 'L_DHOSTING',
 };
@@ -77,6 +80,12 @@ const nodes = [
   { id: 'update_supl_py',   label: 'update_suplementy.py',  type: 'script', v: ['cortex'], desc: 'aktualizacja bazy suplementów' },
   { id: 'system_audit_py',  label: 'system_audit.py',       type: 'script', v: ['cortex'], desc: 'summary/errors/tail/run/briefing — czyta BigQuery pipeline_logs. Feed sekcji "🤖 Systemy w nocy" w briefingu.' },
 
+  // Cortex v2 migration (2026-04-18) — auto-source-of-truth dla infry
+  { id: 'infra_snapshot_py', label: 'infra_snapshot.py',    type: 'script', v: ['cortex'], desc: 'Generuje LIVE mapę infry (gcloud scheduler/run/functions + pm2 + systemd) do _infra_live.md. Odpalany przez update_context.py.' },
+  { id: 'drift_linter_py',   label: 'drift_linter.py',      type: 'script', v: ['cortex'], desc: 'Wykrywa rozjazdy: skrypty w docs vs scripts/, memory refs, live vs mapy tekstowe, skills bez SKILL.md, stale files.' },
+  { id: 'infra_live_md',     label: '_infra_live.md',       type: 'core',   v: ['cortex'], desc: 'LIVE snapshot infry — auto-generowany, wklejany do context.md każdej sesji. Single source of truth dla GCP+Mikrus+lokalnych automatów.' },
+  { id: 'cortex_routing_md', label: 'cortex_routing.md',    type: 'core',   v: ['cortex'], desc: 'Mapa "Adi mówi X → Claude robi Y". Routing fraz naturalnych na konkretne akcje i skrypty.' },
+
   // Timers
   { id: 'timer_context',   label: 'cortex-context (07:00)',type: 'timer', v: ['cortex'], desc: 'systemd -> update_context.py' },
   { id: 'timer_smoke',     label: 'cortex-smoke (07:10)',  type: 'timer', v: ['cortex'], desc: 'systemd -> smoke_test.py' },
@@ -115,10 +124,9 @@ const nodes = [
 
   // Apps
   { id: 'app_pm',          label: 'PM',                    type: 'app', v: ['cortex'], desc: 'Pricing Manager — Next.js 16, Supabase, Apify — price.partnerexpert.work' },
-  { id: 'app_zakupex',     label: 'ZakupEX',               type: 'app', v: ['cortex'], desc: 'System faktur — Next.js 16, Supabase, OCR GPT-4o — zakupex.vercel.app' },
+  { id: 'app_zakupex',     label: 'ZakupEX',               type: 'app', v: ['cortex'], desc: 'System faktur — Next.js 16, Supabase, OCR GPT-4o. Cloud Run europe-west1, domena zakupex.partnerexpert.work (migrowane z Vercel 2026-04-13).' },
   { id: 'app_janusz',      label: 'Janusz',                type: 'app', v: ['cortex'], desc: 'PERSONA: WhatsApp bot zespołu PEG + PM obowiązki — Node.js, Baileys, GPT-4o-mini — Mikrus (🟢 live)' },
   { id: 'app_gustaw',      label: 'Gustaw',                type: 'app', v: ['cortex'], desc: 'PERSONA: WhatsApp asystent Adiego — Node.js, Baileys, GPT-4o + Gemini — Mikrus (🔴 czeka na SIM)' },
-  { id: 'app_bot_voice',   label: 'BOT Voice',             type: 'app', v: ['cortex'], desc: 'Voice -> Notion — Next.js 14, Whisper, Vercel' },
   { id: 'app_atlas',       label: 'Atlas',                 type: 'app', v: ['cortex'], desc: 'Interaktywna mapa ekosystemu PEG (Cytoscape.js)' },
   { id: 'app_muszla',      label: 'muszla.pl',             type: 'app', v: ['cortex'], desc: 'muszlakolobrzeg.pl — Astro 5, React 19, Tailwind 4, Vercel' },
 
@@ -142,11 +150,10 @@ const nodes = [
   { id: 'repo_janusz',     label: 'Janusz.git',            type: 'repo', v: ['cortex'], desc: 'Node.js, Baileys, PostgreSQL' },
   { id: 'repo_gustaw',     label: 'Gustaw.git',            type: 'repo', v: ['cortex'], desc: 'Node.js, Baileys, GPT-4o — WhatsApp asystent Adiego' },
   { id: 'repo_muszla',     label: 'muszla.pl.git',         type: 'repo', v: ['cortex'], desc: 'Astro' },
-  { id: 'repo_voice',      label: 'voice-notion-app.git',  type: 'repo', v: ['cortex'], desc: 'Node.js' },
   { id: 'repo_atlas',      label: 'atlas.git',             type: 'repo', v: ['cortex'], desc: 'Cytoscape.js — mapa ekosystemu PEG, hostowana na GitHub Pages' },
 
   // Hosting
-  { id: 'vercel',          label: 'Vercel',                type: 'hosting', v: ['cortex'], desc: 'PM, ZakupEX, BOT Voice, muszla.pl' },
+  { id: 'vercel',          label: 'Vercel',                type: 'hosting', v: ['cortex'], desc: 'PM, muszla.pl. (ZakupEX migrowane do Cloud Run 2026-04-13, BOT Voice skasowane 2026-04-18.)' },
   { id: 'dhosting',        label: 'dhosting',              type: 'hosting', v: ['cortex'], desc: 'FTP: IND.U, Sunday, PEG, GEA. Crony PHP ZABLOKOWANE 2026-04-12 (migrowane na GCP Scheduler).' },
   { id: 'gcp',             label: 'GCP Cortex',            type: 'gcp', v: ['cortex'], desc: 'Project ai-council-487609, region europe-central2. Budget 50zł/mies (alerty 50/90/100%). Realny koszt ~10-12zł.' },
   { id: 'gcp_sm',          label: 'Secret Manager',        type: 'secret', v: ['cortex'], desc: '8 sekretów: notion-token-firmowe/prywatne, supabase-pm-key, supabase-zakupex-key, openai-api-key, cloudflare-api-token, cortex-api-key, google-oauth-token' },
@@ -165,6 +172,7 @@ const nodes = [
   { id: 'cr_indexing',     label: 'indexing-daily',        type: 'gcp', v: ['cortex'], desc: 'Cloud Function — Submit URL z sitemap (5 domen PEG) do Google Indexing API.' },
   { id: 'cr_zakupex_import', label: 'zakupex-auto-import', type: 'gcp', v: ['cortex'], desc: 'Cloud Function — OCR faktur z maila → Zakupex (codziennie 02:00).' },
   { id: 'cr_janusz_content', label: 'janusz-content-report', type: 'gcp', v: ['cortex'], desc: 'Cloud Function — Tygodniowy raport treści Janusza (wtorek 08:00).' },
+  { id: 'cr_atlas_status', label: 'atlas-status',          type: 'gcp', v: ['cortex'], desc: 'Cloud Function — proxy dla gs://peg-backups-cortex/health-check/state.json (CORS) → atlas czyta live status 🟢/🔴. Utworzona 2026-04-17.' },
 
   // GCP Cloud Run Job
   { id: 'cr_content',      label: 'content-pipeline',      type: 'gcp', v: ['cortex'], desc: 'Cloud Run Job (Docker+ffmpeg+yt-dlp+opencv) — rolki podcast Tamborskiego' },
@@ -294,7 +302,6 @@ const edges = [
   { source: 'indexing_py',      target: 'indexing_api',    label: 'submit',      v: ['cortex'] },
   { source: 'app_janusz',  target: 'mikrus',           label: 'deploy',   v: ['cortex'] },
   { source: 'repo_gustaw', target: 'app_gustaw',       label: 'builds',   v: ['cortex'] },
-  { source: 'app_bot_voice', target: 'vercel',         label: 'deploy',   v: ['cortex'] },
   { source: 'timer_context', target: 'update_context_py', label: 'triggers', v: ['cortex'] },
   { source: 'timer_smoke',   target: 'smoke_test_py',     label: 'triggers', v: ['cortex'] },
   { source: 'timer_seo',     target: 'seo_report_py',     label: 'triggers', v: ['cortex'] },
@@ -311,19 +318,20 @@ const edges = [
   { source: 'app_janusz',   target: 'mikrus_pg',   label: 'messages+timecard', v: ['cortex'] },
   { source: 'app_janusz',   target: 'notion_api_firm', label: 'Wiki',   v: ['cortex'] },
   { source: 'app_janusz',   target: 'openai_api',  label: 'GPT',        v: ['cortex'] },
-  { source: 'app_bot_voice', target: 'notion_api_firm', label: 'zapis', v: ['cortex'] },
-  { source: 'app_bot_voice', target: 'openai_api', label: 'Whisper',    v: ['cortex'] },
   { source: 'app_gustaw',   target: 'openai_api',  label: 'GPT/Gemini', v: ['cortex'] },
   { source: 'app_gustaw',   target: 'notion_api_firm', label: 'sync',  v: ['cortex'] },
   { source: 'repo_pm',       target: 'app_pm',       label: 'builds', v: ['cortex'] },
   { source: 'repo_zakupex',  target: 'app_zakupex',  label: 'builds', v: ['cortex'] },
   { source: 'repo_janusz',   target: 'app_janusz',   label: 'builds', v: ['cortex'] },
   { source: 'repo_muszla',   target: 'app_muszla',   label: 'builds', v: ['cortex'] },
-  { source: 'repo_voice',    target: 'app_bot_voice', label: 'builds',v: ['cortex'] },
   { source: 'repo_atlas',    target: 'app_atlas',    label: 'builds', v: ['cortex'] },
   { source: 'app_pm',      target: 'vercel',  label: 'deploy', v: ['cortex'] },
-  { source: 'app_zakupex', target: 'vercel',  label: 'deploy', v: ['cortex'] },
+  { source: 'app_zakupex', target: 'gcp',     label: 'deploy (europe-west1)', v: ['cortex'] },
   { source: 'app_muszla',  target: 'vercel',  label: 'deploy', v: ['cortex'] },
+  { source: 'app_atlas',   target: 'cr_atlas_status', label: 'status API', v: ['cortex'] },
+  { source: 'update_context_py', target: 'infra_snapshot_py', label: 'triggers', v: ['cortex'] },
+  { source: 'infra_snapshot_py', target: 'infra_live_md', label: 'generates', v: ['cortex'] },
+  { source: 'infra_live_md', target: 'context_md', label: 'included', v: ['cortex'] },
   { source: 'deploy_ftp_sh', target: 'dhosting', label: 'FTP',  v: ['cortex'] },
   { source: 'laptop', target: 'timer_context', label: 'runs', v: ['cortex'] },
   { source: 'laptop', target: 'timer_smoke',   label: 'runs', v: ['cortex'] },
@@ -526,9 +534,9 @@ const nodeMeta = {
     what: 'System faktur zakupowych PER z OCR.',
     does: ['Codziennie 02:00 pobiera faktury z maila', 'OCR przez GPT-4o', 'Reconciliation z wFirma', 'Wysyła raport mailem'],
     why: 'Automatyzuje księgowość PER — restauracje mają setki faktur miesięcznie.',
-    status: '🟢 live',
-    cost: 0,
-    url: 'https://zakupex.vercel.app',
+    status: '🟢 live (Cloud Run europe-west1)',
+    cost: 3,
+    url: 'https://zakupex.partnerexpert.work',
   },
   app_janusz: {
     what: 'PERSONA: WhatsApp bot wiedzy firmowej PEG.',
@@ -542,13 +550,6 @@ const nodeMeta = {
     does: ['Czeka na SIM', 'Docelowo: concierge — zadania, kalendarz, notatki'],
     why: 'Drugi filar persona — Janusz dla zespołu, Gustaw dla Adi.',
     status: '🔴 off (czeka na SIM)',
-  },
-  app_bot_voice: {
-    what: 'Voice → Notion — mobilna apka Adi.',
-    does: ['Nagrywanie głosu', 'Whisper transkrybuje', 'Zapis do Notion'],
-    why: 'Szybki capture myśli w drodze. Do wyłączenia po deploy Gustaw v2.',
-    status: '🟡 do wyłączenia',
-    url: 'https://bot.partnerexpert.work',
   },
   app_muszla: {
     what: 'muszlakolobrzeg.pl — strona Muszli Koncertowej.',
@@ -569,7 +570,7 @@ const nodeMeta = {
   vercel: {
     what: 'Hosting Next.js apek PEG.',
     does: ['Auto-deploy z GitHub main', 'Serverless functions', 'Edge network', 'Preview deployments per PR'],
-    why: 'Frontend + API dla PM/Zakupex/muszla/BOT Voice.',
+    why: 'Frontend + API dla PM + muszla.pl. (ZakupEX od 2026-04-13 na Cloud Run, BOT Voice skasowane 2026-04-18.)',
     status: '🟢 live',
     cost: 0,
     url: 'https://vercel.com/dashboard',
@@ -655,7 +656,7 @@ const nodeMeta = {
   notion_api_firm: {
     what: 'Notion API — 20 baz firmowych PEG.',
     does: ['Zadania, Projekty, CRM, Aktywności, Pracownicy, Obowiązki, Biznesy, Umowy, Notatki, GUNB, Wiki'],
-    why: 'Główne repozytorium wiedzy i operacji PEG. Używane przez Cortex, Janusz, BOT Voice.',
+    why: 'Główne repozytorium wiedzy i operacji PEG. Używane przez Cortex i Janusz.',
     status: '🟢 live',
     cost: 80,
   },
@@ -750,5 +751,38 @@ const nodeMeta = {
     does: ['Beach Box, Sunset Bar, Muszla Koncertowa', 'Zarządzanie sezonem gastro', 'Restrukturyzacja 2026'],
     why: 'Filar gastro PEG. Muszla to 7-letnia dzierżawa od miasta.',
     status: '🟡 restrukturyzacja',
+  },
+
+  // Cortex v2 migration (2026-04-18)
+  cr_atlas_status: {
+    what: 'Cloud Function — proxy bucketa health-check → atlas live status.',
+    does: ['Czyta gs://peg-backups-cortex/health-check/state.json (SA auth)', 'Zwraca JSON z CORS', 'Atlas fetch co 60s → 🟢/🔴 per apka'],
+    why: 'Atlas (statyczny HTML na GitHub Pages) nie może czytać prywatnego bucketa bezpośrednio — CF to proxy.',
+    status: '🟢 live (2026-04-17)',
+    cost: 0,
+  },
+  infra_snapshot_py: {
+    what: 'Generator LIVE mapy infrastruktury Cortex/PEG.',
+    does: ['gcloud scheduler/run/functions list (oba regiony)', 'ssh penguin pm2 jlist', 'systemctl --user list-timers + crontab -l', 'Zapis do knowledge/maps/_infra_live.md'],
+    why: 'Single source of truth — koniec z rozjazdami ręcznych map vs rzeczywistości. Odpalany automatycznie przez update_context.py.',
+    status: '🟢 live (2026-04-18)',
+  },
+  drift_linter_py: {
+    what: 'Wykrywa rozjazdy między dokumentacją a rzeczywistością Cortex.',
+    does: ['Skrypty w CLAUDE.md/knowledge/ istnieją w scripts/?', 'Memory references w MEMORY.md → pliki istnieją?', 'Zombie w mapach tekstowych vs LIVE?', 'Skills mają SKILL.md?', 'Stale docs >60 dni?', 'Home CLAUDE.md to symlink?'],
+    why: 'Automatyczny strażnik spójności — wyłapuje drift zanim urośnie.',
+    status: '🟢 live (2026-04-18)',
+  },
+  infra_live_md: {
+    what: 'LIVE snapshot infry — auto-generowany markdown.',
+    does: ['~100 linii: schedulery, Cloud Run services/jobs, Cloud Functions, Mikrus PM2, lokalne timery', 'Wklejany do context.md (każda sesja Claude ma aktualny stan)', 'Backup poprzedniej wersji w _infra_live.prev.md (diff-friendly)'],
+    why: 'Jeden plik = jedna prawda. Claude nie zgaduje co istnieje w infrze.',
+    status: '🟢 live (2026-04-18)',
+  },
+  cortex_routing_md: {
+    what: 'Mapa "Adi mówi X → Claude robi Y".',
+    does: ['Fraza naturalna → skrypt + parametry + domyślne zachowanie', 'Email (draft/send, PEG/prywatny), zadania, audyty WWW, GBP, health, Janusz, content pipeline', '13 nadrzędnych zasad (rób sam, max 2 próby, zakazane ops)'],
+    why: 'Adi pisze naturalnie (polski, potocznie, bez hashtagów). Routing = moja robota rozpoznać intencję bez pytania.',
+    status: '🟢 live (2026-04-18)',
   },
 };
