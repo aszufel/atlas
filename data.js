@@ -397,9 +397,16 @@ const edges = [
   { source: 'gcp_ar',              target: 'cr_content',      label: 'Docker image', v: ['cortex'] },
   // Uptime monitoring
   { source: 'gcp_uptime', target: 'app_janusz', label: 'health check', v: ['cortex'] },
-  // BigQuery pipeline_logs (2026-04-17)
+  // BigQuery pipeline_logs (2026-04-17, rozszerzone 2026-04-20 o 6 apek)
   { source: 'gcp', target: 'gcp_bq', label: 'has', v: ['cortex'] },
   { source: 'app_pm', target: 'gcp_bq', label: 'pipeline logs', v: ['cortex'] },
+  { source: 'app_zakupex', target: 'gcp_bq', label: 'pipeline logs', v: ['cortex'] },
+  { source: 'app_janusz', target: 'gcp_bq', label: 'pipeline logs', v: ['cortex'] },
+  { source: 'cr_recenzent', target: 'gcp_bq', label: 'pipeline logs', v: ['cortex'] },
+  { source: 'cr_health_check', target: 'gcp_bq', label: 'pipeline logs', v: ['cortex'] },
+  { source: 'cr_notion_backup', target: 'gcp_bq', label: 'pipeline logs', v: ['cortex'] },
+  { source: 'cr_supabase_backup', target: 'gcp_bq', label: 'pipeline logs', v: ['cortex'] },
+  { source: 'cr_cloudflare_backup', target: 'gcp_bq', label: 'pipeline logs', v: ['cortex'] },
   { source: 'gcp_bq', target: 'system_audit_py', label: 'query', v: ['cortex'] },
   { source: 'system_audit_py', target: 'update_context_py', label: 'feed briefing', v: ['cortex'] },
   // Brakujące Scheduler + Cloud Run (2026-04-17)
@@ -605,10 +612,10 @@ const nodeMeta = {
     url: 'https://console.cloud.google.com/home/dashboard?project=ai-council-487609',
   },
   gcp_bq: {
-    what: 'BigQuery cortex_logs.pipeline_logs — centralny dziennik PEG.',
-    does: ['Zapis logów pipeline każdej apki', 'Partycje DAY, retention 30d', 'Query przez system_audit.py', 'Sekcja "Systemy w nocy" w briefingu'],
-    why: 'Widoczność co się dzieje w nocy w apkach. Fundament pod auto-push cen PM.',
-    status: '🟢 live',
+    what: 'BigQuery pipeline_logs.logs — centralny dziennik PEG (4 app_name, ~15 sources).',
+    does: ['Zapis logów pipeline każdej apki', 'Partycje DAY, retention 30d', 'Query przez system_audit.py', 'Sekcja "Systemy w nocy" w briefingu', 'Cap 1000/dzień/source', 'PII filter w warstwie wrappera'],
+    why: 'Widoczność co się dzieje w nocy w apkach. Fundament pod auto-push cen PM, iteracyjne fixowanie błędów Janusza, monitoring backupów.',
+    status: '🟢 live — 7 apek podłączonych (2026-04-20): cortex (recenzent/health-check/3×backup), janusz (vision/wa-connection/timecard), pm (webhook/generate-summary), zakupex (auto-import)',
     cost: 0,
   },
   gcp_sm: {
