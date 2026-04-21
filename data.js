@@ -160,7 +160,7 @@ const nodes = [
   { id: 'gcp_bucket',      label: 'gs://peg-backups-cortex', type: 'bucket', v: ['cortex'], desc: 'Bucket GCS, lifecycle 30 dni. Foldery: notion/, supabase/, cloudflare/, claude-config/, mikrus/' },
   { id: 'gcp_ar',          label: 'Artifact Registry',     type: 'gcp', v: ['cortex'], desc: 'cortex-jobs/ — Docker images dla Cloud Run Jobs' },
   { id: 'gcp_uptime',      label: 'Uptime Check + Alert',  type: 'gcp', v: ['cortex'], desc: 'janusz-mikrus-health co 5min → /health. Alert email: Janusz DOWN po 60s.' },
-  { id: 'gcp_bq',          label: 'BigQuery pipeline_logs', type: 'gcp', v: ['cortex'], desc: 'Dataset cortex_logs, tabela pipeline_logs (partitioned by DAY, 30d retention). Centralny dziennik wszystkich apek PEG. Kolumny: app, level, source, event, message, meta (JSON), run_id. SA: pipeline-logger.' },
+  { id: 'gcp_bq',          label: 'BigQuery pipeline_logs', type: 'gcp', v: ['cortex'], desc: 'Dataset cortex_logs (EU), tabela pipeline_logs (partitioned by DAY, 30d retention). Centralny dziennik wszystkich apek PEG. Kolumny: created_at, app, level, source, event, message, meta (JSON), run_id. SA: pipeline-logger (zapis), cortex-backups (odczyt od 2026-04-21).' },
 
   // GCP Cloud Run Functions (4)
   { id: 'cr_notion_backup', label: 'notion-backup',        type: 'gcp', v: ['cortex'], desc: 'Cloud Run Function — 28 baz Notion → GCS' },
@@ -612,8 +612,8 @@ const nodeMeta = {
     url: 'https://console.cloud.google.com/home/dashboard?project=ai-council-487609',
   },
   gcp_bq: {
-    what: 'BigQuery pipeline_logs.logs — centralny dziennik PEG (4 app_name, ~15 sources).',
-    does: ['Zapis logów pipeline każdej apki', 'Partycje DAY, retention 30d', 'Query przez system_audit.py', 'Sekcja "Systemy w nocy" w briefingu', 'Cap 1000/dzień/source', 'PII filter w warstwie wrappera'],
+    what: 'BigQuery cortex_logs.pipeline_logs — centralny dziennik PEG (4 app, ~15 sources). Lokalizacja: EU.',
+    does: ['Zapis logów pipeline każdej apki', 'Partycje DAY, retention 30d', 'Query przez system_audit.py', 'Sekcja "Systemy w nocy" w briefingu', 'Cap 1000/dzień/source', 'PII filter w warstwie wrappera', 'Kolumny: created_at, app, level, source, event, message, meta (JSON), run_id'],
     why: 'Widoczność co się dzieje w nocy w apkach. Fundament pod auto-push cen PM, iteracyjne fixowanie błędów Janusza, monitoring backupów.',
     status: '🟢 live — 7 apek podłączonych (2026-04-20): cortex (recenzent/health-check/3×backup), janusz (vision/wa-connection/timecard), pm (webhook/generate-summary), zakupex (auto-import)',
     cost: 0,
