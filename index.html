@@ -309,7 +309,12 @@ function applyBackupBadges() {
 let badgeRaf = null;
 function scheduleBadgeUpdate() {
   if (badgeRaf) return;
-  badgeRaf = requestAnimationFrame(() => { badgeRaf = null; applyBackupBadges(); });
+  badgeRaf = requestAnimationFrame(() => {
+    badgeRaf = null;
+    applyBackupBadges();
+    if (typeof renderBQLogBadges === 'function') renderBQLogBadges();
+    if (typeof renderLiveStatusBadges === 'function') renderLiveStatusBadges();
+  });
 }
 
 // === LAYOUTS ===
@@ -1252,6 +1257,34 @@ fetchLiveStatus();
 setInterval(fetchLiveStatus, 60000);
 // Odśwież przy zmianach widoku/zoomu
 cy.on('pan zoom', () => renderLiveStatusBadges());
+
+// === BQ LOGGING BADGES — mała ikona w prawym dolnym rogu gdzie apka loguje do pipeline_logs ===
+const BQ_LOGGING_NODES = new Set([
+  'app_pm', 'app_zakupex', 'app_janusz',
+  'cr_recenzent', 'cr_health_check',
+  'cr_notion_backup', 'cr_supabase_backup', 'cr_cloudflare_backup'
+]);
+
+function renderBQLogBadges() {
+  document.querySelectorAll('.bq-log-badge').forEach(el => el.remove());
+  BQ_LOGGING_NODES.forEach(nodeId => {
+    const node = cy.getElementById(nodeId);
+    if (!node || !node.length || !node.visible()) return;
+    const pos = node.renderedPosition();
+    const w = node.renderedWidth();
+    const h = node.renderedHeight();
+    const size = Math.max(14, Math.min(20, w * 0.32));
+    // Prawy dolny róg
+    const bx = pos.x + w/2 - size*0.3;
+    const by = pos.y + h/2 - size*0.7;
+    const badge = document.createElement('div');
+    badge.className = 'bq-log-badge';
+    badge.style.cssText = `position:absolute; left:${bx}px; top:${by}px; width:${size}px; height:${size}px; background:#0f1117; border:1.5px solid #4285f4; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,.5);`;
+    badge.innerHTML = `<img src="${ICON_BASE}/tabler/chart-bar.svg?color=%234285f4" style="width:${size*0.6}px;height:${size*0.6}px">`;
+    badge.title = 'Loguje do BigQuery pipeline_logs';
+    badgeLayer.appendChild(badge);
+  });
+}
 </script>
 </body>
 </html>
