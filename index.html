@@ -3,1288 +3,732 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Atlas — PEG Ecosystem</title>
-<meta name="description" content="Interaktywna mapa ekosystemu Partner Expert GROUP — technologia, biznesy, zespół">
-<meta property="og:title" content="Atlas — PEG Ecosystem">
-<meta property="og:description" content="Interaktywna mapa ekosystemu PEG: Cortex (skrypty, API, MCP), Biznesy (spółki, punkty, strategie), Zespół (pracownicy)">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://aszufel.github.io/atlas/">
+<title>Atlas — Cortex</title>
+<meta name="description" content="Atlas Cortexu — co jest, co działa, co kiedy rusza">
 <meta name="robots" content="noindex, nofollow">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
-<script src="https://unpkg.com/cytoscape@3.30.4/dist/cytoscape.min.js" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/layout-base@2.0.1/layout-base.js" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/cose-base@2.2.0/cose-base.js" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/cytoscape-fcose@2.2.0/cytoscape-fcose.js" crossorigin="anonymous"></script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e1e4e8; height: 100vh; display: flex; flex-direction: column; }
+:root {
+  --bg: #0f1117;
+  --panel: #161b22;
+  --panel-2: #1c2128;
+  --border: #30363d;
+  --text: #e1e4e8;
+  --muted: #8b949e;
+  --dim: #484f58;
+  --accent: #58a6ff;
+  --ok: #3fb950;
+  --warn: #d29922;
+  --err: #f85149;
+  --pink: #f778ba;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { background: var(--bg); color: var(--text); font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; }
 
-.topbar { display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: #161b22; border-bottom: 1px solid #30363d; flex-shrink: 0; }
-.logo { font-size: 18px; font-weight: 700; color: #58a6ff; letter-spacing: 1px; }
-.views { display: flex; gap: 4px; }
-.views button { padding: 6px 14px; border: 1px solid #30363d; background: transparent; color: #8b949e; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all .15s; }
-.views button:hover { color: #e1e4e8; border-color: #58a6ff; }
-.views button.active { background: #58a6ff; color: #fff; border-color: #58a6ff; }
-.search-box { margin-left: auto; position: relative; }
-.search-box input { padding: 6px 12px 6px 32px; background: #0d1117; border: 1px solid #30363d; color: #e1e4e8; border-radius: 6px; font-size: 13px; width: 220px; outline: none; }
-.search-box input:focus { border-color: #58a6ff; }
-.search-box::before { content: "\1F50D"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; }
-.autocomplete-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #161b22; border: 1px solid #30363d; border-radius: 6px; max-height: 280px; overflow-y: auto; z-index: 2000; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
-.autocomplete-item { padding: 6px 10px; font-size: 12px; color: #e1e4e8; cursor: pointer; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #21262d; }
-.autocomplete-item:hover, .autocomplete-item.active { background: #1f6feb22; }
-.autocomplete-item:last-child { border-bottom: none; }
-.autocomplete-item .ac-type { font-size: 10px; color: #8b949e; margin-left: auto; }
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 24px;
+  background: var(--panel); border-bottom: 1px solid var(--border);
+}
+.brand { font-size: 17px; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+.brand-sub { font-size: 11px; font-weight: 400; color: var(--muted); letter-spacing: 0; margin-left: 4px; }
+.search { margin-left: auto; position: relative; }
+.search input {
+  background: var(--bg); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 12px 7px 32px; border-radius: 6px; width: 280px; font-size: 13px; outline: none;
+}
+.search input:focus { border-color: var(--accent); }
+.search::before { content: "🔍"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; }
+.top-links { display: flex; gap: 8px; }
+.top-links a {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--muted); font-size: 12px;
+}
+.top-links a:hover { color: var(--text); border-color: var(--accent); text-decoration: none; }
 
-.main { display: flex; flex: 1; overflow: hidden; }
-#cy { flex: 1; }
+.health-banner {
+  margin: 16px 24px 0;
+  padding: 14px 18px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.health-banner .h-title { font-weight: 600; font-size: 14px; }
+.health-banner .h-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; background: var(--bg); border-radius: 999px; font-size: 12px;
+}
+.h-dot { width: 8px; height: 8px; border-radius: 50%; }
+.h-dot.ok { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.h-dot.warn { background: var(--warn); }
+.h-dot.err { background: var(--err); box-shadow: 0 0 6px var(--err); }
+.h-dot.idle { background: var(--dim); }
+.h-time { color: var(--muted); font-size: 11px; margin-left: auto; }
 
-.sidebar { width: 320px; background: #161b22; border-left: 1px solid #30363d; padding: 20px; overflow-y: auto; flex-shrink: 0; }
-.sidebar h2 { font-size: 16px; margin-bottom: 12px; color: #58a6ff; }
-.sidebar .node-type { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-bottom: 8px; }
-.sidebar .detail { margin-bottom: 8px; }
-.sidebar .detail-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: .5px; }
-.sidebar .detail-value { font-size: 14px; color: #e1e4e8; margin-top: 2px; }
-.sidebar .connections { margin-top: 16px; }
-.sidebar .connections h3 { font-size: 13px; color: #8b949e; margin-bottom: 8px; }
-.sidebar .conn-item { padding: 4px 0; font-size: 13px; color: #c9d1d9; cursor: pointer; }
-.sidebar .conn-item:hover { color: #58a6ff; }
-.sidebar .empty { color: #484f58; font-size: 13px; font-style: italic; }
+main { padding: 0 24px 80px; }
+section { margin-top: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.sec-head h2 { font-size: 17px; font-weight: 600; }
+.sec-head .sec-count { color: var(--muted); font-size: 13px; }
+.sec-head .sec-desc { color: var(--dim); font-size: 12px; margin-left: auto; }
 
-.sidebar .welcome h2 { font-size: 16px; color: #58a6ff; margin-bottom: 8px; }
-.sidebar .welcome p { font-size: 13px; color: #8b949e; line-height: 1.5; margin-bottom: 12px; }
-.sidebar .welcome .shortcut { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; color: #8b949e; }
-.sidebar .welcome .shortcut kbd { background: #21262d; border: 1px solid #30363d; border-radius: 4px; padding: 1px 6px; font-size: 11px; color: #c9d1d9; font-family: monospace; }
-.sidebar .welcome .view-desc { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-.sidebar .welcome .view-desc h3 { font-size: 13px; color: #e1e4e8; margin-bottom: 4px; }
-.sidebar .welcome .view-desc p { font-size: 12px; margin-bottom: 0; }
-.sidebar .welcome .hint { font-size: 11px; color: #484f58; margin-top: 8px; border-top: 1px solid #21262d; padding-top: 8px; }
+.grid { display: grid; gap: 12px; }
+.grid.apps { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.grid.crons { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.grid.cards { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.grid.wide  { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 
-.tooltip { position: fixed; background: #1c2128; border: 1px solid #30363d; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #e1e4e8; pointer-events: none; z-index: 1000; max-width: 260px; box-shadow: 0 4px 12px rgba(0,0,0,.4); transition: opacity .15s; }
-.tooltip .tt-label { font-weight: 600; margin-bottom: 2px; }
-.tooltip .tt-type { font-size: 10px; color: #8b949e; }
-.tooltip .tt-desc { font-size: 11px; color: #8b949e; margin-top: 4px; line-height: 1.4; }
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px; cursor: pointer; transition: border-color .15s, transform .15s;
+  position: relative;
+}
+.card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.card.app .card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.card.app .app-name { font-weight: 600; font-size: 14px; }
+.card.app .app-status { width: 8px; height: 8px; border-radius: 50%; margin-left: auto; }
+.card .card-desc { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+.card .card-meta { font-size: 11px; color: var(--dim); margin-top: 6px; }
 
-.legend { display: flex; gap: 12px; padding: 8px 20px; background: #161b22; border-top: 1px solid #30363d; flex-wrap: wrap; flex-shrink: 0; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8b949e; cursor: pointer; transition: opacity .15s; user-select: none; }
-.legend-item:hover { color: #e1e4e8; }
-.legend-dot { width: 16px; height: 16px; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.legend-dot img { width: 12px; height: 12px; filter: brightness(10); }
+.card.cron .cron-time { font-family: ui-monospace, monospace; font-size: 13px; color: var(--accent); font-weight: 600; }
+.card.cron .cron-name { font-size: 13px; margin-top: 2px; }
+.card.cron .cron-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
 
-.stats { font-size: 12px; color: #484f58; padding: 8px 20px; background: #161b22; border-top: 1px solid #30363d; text-align: center; }
+.tile {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; gap: 10px;
+}
+.tile:hover { border-color: var(--accent); }
+.tile .tile-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.tile .tile-name { font-size: 13px; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile .tile-tag { font-size: 10px; color: var(--dim); flex-shrink: 0; }
 
-.back-btn { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; margin-bottom: 12px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; font-size: 12px; cursor: pointer; transition: all .15s; }
-.back-btn:hover { color: #e1e4e8; border-color: #58a6ff; }
+.group-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.group-chip {
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px;
+  padding: 5px 12px 5px 10px; font-size: 12px; color: var(--muted);
+  cursor: pointer; transition: all .15s;
+}
+.group-chip:hover { color: var(--text); border-color: var(--accent); }
+.group-chip .chip-count { color: var(--accent); font-weight: 600; margin-left: 2px; }
+.group-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.group-chip.active .chip-count { color: #fff; }
 
-.legend-toggle { display: none; padding: 6px 16px; background: #161b22; border-top: 1px solid #30363d; color: #8b949e; font-size: 12px; cursor: pointer; text-align: center; }
-.legend-toggle:hover { color: #e1e4e8; }
-.legend.collapsed { display: none; }
+/* Sidebar overlay */
+.sidebar {
+  position: fixed; top: 0; right: 0; width: 380px; max-width: 90vw; height: 100vh;
+  background: var(--panel); border-left: 1px solid var(--border);
+  padding: 24px; overflow-y: auto; z-index: 200;
+  transform: translateX(110%); transition: transform .25s ease-out;
+  box-shadow: -8px 0 24px rgba(0,0,0,.4);
+}
+.sidebar.open { transform: translateX(0); }
+.sidebar .sb-close {
+  position: absolute; top: 12px; right: 14px;
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 22px; line-height: 1;
+}
+.sidebar .sb-close:hover { color: var(--text); }
+.sidebar h3 { font-size: 16px; margin: 0 0 4px; color: var(--accent); }
+.sidebar .sb-type { display: inline-block; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; font-size: 10.5px; color: var(--muted); margin-bottom: 12px; }
+.sidebar .sb-desc { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 16px; }
+.sidebar .sb-section { margin-top: 16px; }
+.sidebar .sb-section-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.sidebar .sb-item {
+  padding: 6px 8px; border-radius: 6px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; font-size: 13px;
+}
+.sidebar .sb-item:hover { background: var(--bg); }
+.sidebar .sb-item .sb-icon { font-size: 13px; }
+.sidebar .sb-item .sb-meta { color: var(--muted); font-size: 11px; margin-left: auto; }
 
-@media (max-width: 768px) {
-  .main { flex-direction: column; }
-  .sidebar { width: 100%; max-height: 40vh; border-left: none; border-top: 1px solid #30363d; }
-  #cy { min-height: 50vh; }
-  .topbar { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
-  .search-box { margin-left: 0; width: 100%; }
-  .search-box input { width: 100%; }
-  .logo-group { display: flex; align-items: center; gap: 12px; width: 100%; }
-  .legend-toggle { display: block; }
-  .legend { flex-wrap: wrap; }
+.sb-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 150;
+}
+.sb-backdrop.open { opacity: 1; pointer-events: auto; }
+
+.footer { padding: 24px; text-align: center; color: var(--dim); font-size: 11px; border-top: 1px solid var(--border); margin-top: 40px; }
+
+/* Search results dropdown */
+.search-results {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  max-height: 360px; overflow-y: auto; z-index: 110;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+}
+.search-result {
+  padding: 8px 12px; cursor: pointer; display: flex; gap: 8px; align-items: center;
+  border-bottom: 1px solid var(--bg); font-size: 12.5px;
+}
+.search-result:hover { background: var(--bg); }
+.search-result .sr-type { color: var(--dim); font-size: 10.5px; margin-left: auto; }
+
+/* Bottom strip with totals */
+.bottom-strip {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--panel); border-top: 1px solid var(--border);
+  padding: 6px 24px; font-size: 11px; color: var(--muted);
+  display: flex; justify-content: space-between; align-items: center; z-index: 50;
+}
+
+@media (max-width: 720px) {
+  .topbar { flex-wrap: wrap; gap: 8px; padding: 10px 14px; }
+  .search { width: 100%; margin-left: 0; }
+  .search input { width: 100%; }
+  main { padding: 0 14px 80px; }
+  .health-banner { margin: 12px 14px 0; }
+  .sidebar { width: 100%; max-width: 100%; }
 }
 </style>
 </head>
 <body>
 
-<div id="tooltip" class="tooltip" style="display:none"></div>
-
 <div class="topbar">
-  <div class="logo">ATLAS <span style="font-size:11px;font-weight:400;color:#8b949e;letter-spacing:0">— mapa ekosystemu PEG</span></div>
-  <div class="views">
-    <button class="active" data-view="cortex">Cortex</button>
-    <button data-view="biznesy">Biznesy</button>
-    <button data-view="zespol">Zesp&oacute;l</button>
-    <button data-view="dataflow">Dataflow</button>
+  <div class="brand">🧭 ATLAS<span class="brand-sub">— mapa Cortexu</span></div>
+  <div class="search">
+    <input type="text" id="search" placeholder="Szukaj... (skrypty, crony, API)" autocomplete="off">
+    <div id="search-results" class="search-results" style="display:none"></div>
   </div>
-  <div class="search-box">
-    <input type="text" id="search" placeholder="Szukaj... ( / )" autocomplete="off">
-    <div id="autocomplete" class="autocomplete-list" style="display:none"></div>
-  </div>
-  <button id="btn-orphans" title="Podświetl izolowane node'y (bez połączeń)" style="padding:6px 12px;background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:6px;cursor:pointer;font-size:12px">🔦 Sieroty (<span id="orphans-count">0</span>)</button>
-  <button id="btn-export" title="Zapisz jako PNG" style="padding:6px 12px;background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:6px;cursor:pointer;font-size:12px">📷 PNG</button>
-  <span id="updated-ts" style="font-size:11px;color:#484f58;margin-left:auto">updated: …</span>
-</div>
-
-<div class="main">
-  <div id="cy"></div>
-  <div class="sidebar" id="sidebar">
-    <p class="empty">Kliknij node aby zobaczyć szczegóły</p>
+  <div class="top-links">
+    <a href="old.html" title="Stara wizualizacja Cytoscape">📊 Stara mapa</a>
+    <a href="old.html#dataflow" title="Dataflow (Cytoscape)">🌊 Dataflow</a>
   </div>
 </div>
 
-<div class="legend-toggle" id="legendToggle">▲ Legenda</div>
-<div class="legend" id="legend"></div>
-<div class="stats" id="stats"></div>
+<div id="health" class="health-banner">
+  <div class="h-title">Status</div>
+  <div id="health-pills" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  <div id="health-time" class="h-time">…</div>
+</div>
+
+<main>
+  <section id="sec-apps">
+    <div class="sec-head">
+      <h2>🚀 Aplikacje PEG</h2>
+      <span class="sec-count" id="cnt-apps"></span>
+      <span class="sec-desc">działające produkty • klik = szczegóły</span>
+    </div>
+    <div class="grid apps" id="apps-grid"></div>
+  </section>
+
+  <section id="sec-automaty">
+    <div class="sec-head">
+      <h2>⏰ Automaty (crony + timery)</h2>
+      <span class="sec-count" id="cnt-automaty"></span>
+      <span class="sec-desc">posortowane po godzinie • klik = szczegóły</span>
+    </div>
+    <div class="grid crons" id="automaty-grid"></div>
+  </section>
+
+  <section id="sec-scripts">
+    <div class="sec-head">
+      <h2>🐍 Skrypty Cortex</h2>
+      <span class="sec-count" id="cnt-scripts"></span>
+      <span class="sec-desc">grupowane po obszarze • klik chip = filtruj</span>
+    </div>
+    <div class="group-row" id="scripts-chips" style="margin-bottom:14px"></div>
+    <div class="grid wide" id="scripts-grid"></div>
+  </section>
+
+  <section id="sec-integrations">
+    <div class="sec-head">
+      <h2>🔌 Integracje (API + MCP)</h2>
+      <span class="sec-count" id="cnt-integrations"></span>
+      <span class="sec-desc">zewnętrzne usługi</span>
+    </div>
+    <div class="grid cards" id="integrations-grid"></div>
+  </section>
+
+  <section id="sec-storage">
+    <div class="sec-head">
+      <h2>🗄️ Storage</h2>
+      <span class="sec-count" id="cnt-storage"></span>
+      <span class="sec-desc">bazy, buckety, kolejki</span>
+    </div>
+    <div class="grid cards" id="storage-grid"></div>
+  </section>
+
+  <section id="sec-hosting">
+    <div class="sec-head">
+      <h2>☁️ Hosting</h2>
+      <span class="sec-count" id="cnt-hosting"></span>
+      <span class="sec-desc">gdzie to żyje</span>
+    </div>
+    <div class="grid cards" id="hosting-grid"></div>
+  </section>
+
+  <section id="sec-core">
+    <div class="sec-head">
+      <h2>📄 Core files</h2>
+      <span class="sec-count" id="cnt-core"></span>
+      <span class="sec-desc">źródła prawdy Cortexu</span>
+    </div>
+    <div class="grid wide" id="core-grid"></div>
+  </section>
+
+  <section id="sec-cloudrun">
+    <div class="sec-head">
+      <h2>⚡ Cloud Run / Functions</h2>
+      <span class="sec-count" id="cnt-cloudrun"></span>
+      <span class="sec-desc">backendy serverless</span>
+    </div>
+    <div class="grid wide" id="cloudrun-grid"></div>
+  </section>
+
+  <section id="sec-repos">
+    <div class="sec-head">
+      <h2>📦 Repozytoria</h2>
+      <span class="sec-count" id="cnt-repos"></span>
+      <span class="sec-desc">GitHub</span>
+    </div>
+    <div class="grid cards" id="repos-grid"></div>
+  </section>
+</main>
+
+<div id="sb-backdrop" class="sb-backdrop"></div>
+<aside id="sidebar" class="sidebar">
+  <button class="sb-close" id="sb-close">✕</button>
+  <div id="sb-body"></div>
+</aside>
+
+<div class="bottom-strip">
+  <span><strong id="bs-total">…</strong> obiektów w Cortex · <a href="old.html" style="color:var(--accent)">stary widok</a></span>
+  <span id="bs-cost">…</span>
+  <span class="mono">updated: <span id="bs-updated">…</span></span>
+</div>
 
 <script src="data.js"></script>
 <script>
-const ICON_BASE = 'https://api.iconify.design';
-const TYPES = {
-  script:   { label: 'Skrypt',     color: '#3fb950', shape: 'round-rectangle', icon: 'tabler/terminal-2' },
-  api:      { label: 'API',        color: '#58a6ff', shape: 'round-rectangle', icon: 'tabler/cloud' },
-  timer:    { label: 'Timer',      color: '#d29922', shape: 'round-rectangle', icon: 'tabler/clock' },
-  cron:     { label: 'Cron PHP',   color: '#db6d28', shape: 'round-rectangle', icon: 'tabler/clock-play' },
-  gcp:      { label: 'GCP',        color: '#4285f4', shape: 'round-rectangle', icon: 'simple-icons/googlecloud' },
-  sched:    { label: 'Scheduler',  color: '#4285f4', shape: 'round-rectangle', icon: 'tabler/alarm' },
-  secret:   { label: 'Secret',     color: '#6f42c1', shape: 'round-rectangle', icon: 'tabler/key' },
-  bucket:   { label: 'Storage',    color: '#0ea5e9', shape: 'round-rectangle', icon: 'simple-icons/googlecloudstorage' },
-  mcp:      { label: 'MCP',        color: '#bc8cff', shape: 'round-rectangle', icon: 'tabler/puzzle' },
-  app:      { label: 'Aplikacja',  color: '#f778ba', shape: 'round-rectangle', icon: 'tabler/app-window' },
-  repo:     { label: 'Repo',       color: '#8b949e', shape: 'round-rectangle', icon: 'tabler/git-branch' },
-  core:     { label: 'Core file',  color: '#e3b341', shape: 'round-rectangle', icon: 'tabler/file-text' },
-  persona:  { label: 'Persona',    color: '#f97583', shape: 'ellipse',         icon: 'tabler/robot' },
-  automat:  { label: 'Automat',    color: '#d2a8ff', shape: 'round-rectangle', icon: 'tabler/clock-bolt' },
-  hosting:  { label: 'Hosting',    color: '#56d364', shape: 'round-rectangle', icon: 'tabler/server' },
-  holding:  { label: 'Holding',    color: '#f0e68c', shape: 'round-rectangle', icon: 'tabler/building-skyscraper' },
-  spolka:   { label: 'Spółka',     color: '#ff7b72', shape: 'round-rectangle', icon: 'tabler/briefcase' },
-  punkt:    { label: 'Punkt',      color: '#ffa657', shape: 'round-rectangle', icon: 'tabler/map-pin' },
-  strategia:{ label: 'Strategia',  color: '#7ee787', shape: 'round-rectangle', icon: 'tabler/chess-knight' },
-  pracownik:{ label: 'Pracownik',  color: '#79c0ff', shape: 'ellipse',         icon: 'tabler/user' },
-  person_zarzad:    { label: 'Zarząd',      color: '#f0e68c', shape: 'ellipse', icon: 'tabler/crown' },
-  person_management:{ label: 'Management',  color: '#f85149', shape: 'ellipse', icon: 'tabler/user-cog' },
-  person_kierownicy:{ label: 'Kierownicy',  color: '#3fb950', shape: 'ellipse', icon: 'tabler/user-star' },
-  person_specjalisci:{label: 'Specjaliści', color: '#d29922', shape: 'ellipse', icon: 'tabler/user-bolt' },
-  person_pracownik_liniowy:{label:'Liniowy',color: '#79c0ff', shape: 'ellipse', icon: 'tabler/user' },
-  group:    { label: 'Grupa',      color: '#21262d', shape: 'round-rectangle', icon: '' },
-  layer:    { label: 'Warstwa',    color: '#21262d', shape: 'round-rectangle', icon: '' },
-  df_header:{ label: 'Pipeline',   color: '#f0883e', shape: 'round-rectangle', icon: 'tabler/arrow-right' },
+// === DATA INDEX ===
+// data.js dostarcza: nodes, edges, layers, nodeMeta (opt)
+const cortexNodes = (typeof nodes !== 'undefined' ? nodes : []).filter(n => (n.v || []).includes('cortex'));
+const byId = new Map(cortexNodes.map(n => [n.id, n]));
+const edgesSafe = (typeof edges !== 'undefined' ? edges : []);
+const adjOut = new Map();
+const adjIn = new Map();
+edgesSafe.forEach(e => {
+  if (!byId.has(e.source) || !byId.has(e.target)) return;
+  if (!adjOut.has(e.source)) adjOut.set(e.source, []);
+  adjOut.get(e.source).push({ to: e.target, label: e.label });
+  if (!adjIn.has(e.target)) adjIn.set(e.target, []);
+  adjIn.get(e.target).push({ from: e.source, label: e.label });
+});
+
+// === TYPE METADATA ===
+const TYPE = {
+  app:    { icon: '🚀', label: 'Aplikacja',  color: '#f778ba' },
+  sched:  { icon: '⏰', label: 'Scheduler',  color: '#4285f4' },
+  timer:  { icon: '⏰', label: 'Timer',      color: '#d29922' },
+  cron:   { icon: '⏰', label: 'Cron PHP',   color: '#db6d28' },
+  script: { icon: '🐍', label: 'Skrypt',     color: '#3fb950' },
+  api:    { icon: '🔌', label: 'API',        color: '#58a6ff' },
+  mcp:    { icon: '🧩', label: 'MCP',        color: '#bc8cff' },
+  gcp:    { icon: '☁️', label: 'GCP',        color: '#4285f4' },
+  hosting:{ icon: '🖥️', label: 'Hosting',    color: '#56d364' },
+  repo:   { icon: '📦', label: 'Repo',       color: '#8b949e' },
+  core:   { icon: '📄', label: 'Core file',  color: '#e3b341' },
+  bucket: { icon: '🗄️', label: 'Storage',    color: '#0ea5e9' },
+  secret: { icon: '🔑', label: 'Secret',     color: '#6f42c1' },
+  automat:{ icon: '⚙️',  label: 'Automat',    color: '#d2a8ff' },
+  layer:  { icon: '📚', label: 'Warstwa',    color: '#21262d' },
 };
+const t = (type) => TYPE[type] || { icon: '•', label: type, color: '#888' };
 
-// === ACTIVE VIEW ===
-let activeView = 'cortex';
-
-// Dataflow view = osobne pipeline'y jako wiersze poziome
-// Każdy pipeline: lewy header + kroki od lewej (źródło) do prawej (cel)
-const DATAFLOW_PIPELINES = [
-  { title: 'PM — pricing nocny',           steps: ['app_pm', 'apify', 'supabase', 'gcp_bq', 'system_audit_py'] },
-  { title: 'Zakupex — OCR faktur',         steps: ['cr_zakupex_import', 'gmail_api', 'openai_api', 'app_zakupex', 'supabase'] },
-  { title: 'Janusz — WhatsApp PEG',        steps: ['app_janusz', 'mikrus_pg', 'cr_janusz_content'] },
-  { title: 'Content — rolki Tamborskiego', steps: ['content_pipeline_py', 'openai_api', 'gdrive_api', 'notion_api_firm'] },
-  { title: 'Backup — Notion',              steps: ['sch_notion', 'cr_notion_backup', 'notion_api_firm', 'gcp_bucket'] },
-  { title: 'Backup — Supabase',            steps: ['sch_supabase', 'cr_supabase_backup', 'supabase', 'gcp_bucket'] },
-  { title: 'Backup — Cloudflare',          steps: ['sch_cf', 'cr_cloudflare_backup', 'cloudflare_api', 'gcp_bucket'] },
-  { title: 'Health check apek',            steps: ['sch_health_check', 'cr_health_check', 'app_pm', 'app_zakupex', 'app_janusz', 'gcp_bucket'] },
-  { title: 'Recenzent GBP',                steps: ['sch_recenzent', 'cr_recenzent', 'gbp_api', 'openai_api', 'app_janusz'] },
-  { title: 'Cortex briefing poranny',      steps: ['update_context_py', 'notion_api_firm', 'gmail_api', 'context_md'] },
-];
-
-function isInView(n, view) {
-  if (view === 'dataflow') return false; // dataflow używa własnego buildera
-  if (view === 'all') return true;
-  return (n.v || []).includes(view);
-}
-
-function buildDataflowElements() {
-  const els = [];
-  const findNode = (id) => nodes.find(n => n.id === id);
-  const ROW_H = 180;
-  const COL_W = 220;
-  const X_OFFSET = 200;  // margines dla header
-
-  DATAFLOW_PIPELINES.forEach((pipe, i) => {
-    // Header po lewej
-    const hId = `df_head_${i}`;
-    els.push({
-      data: { id: hId, label: pipe.title, type: 'df_header', desc: pipe.title },
-      position: { x: -80, y: i * ROW_H },
-    });
-
-    pipe.steps.forEach((srcId, j) => {
-      const src = findNode(srcId);
-      if (!src) { console.warn('Dataflow: missing node', srcId); return; }
-      const nodeId = `df_${i}_${j}`;
-      els.push({
-        data: {
-          id: nodeId, label: src.label, type: src.type,
-          desc: src.desc, origId: srcId,  // do nodeMeta lookup
-        },
-        position: { x: X_OFFSET + j * COL_W, y: i * ROW_H },
-      });
-      if (j > 0) {
-        els.push({ data: { id: `df_e_${i}_${j}`, source: `df_${i}_${j-1}`, target: nodeId, label: '' } });
-      }
-    });
-  });
-
-  return els;
-}
-
-function buildElements(view) {
-  if (view === 'dataflow') return buildDataflowElements();
-  const els = [];
-  const visibleNodeIds = new Set();
-
-  // Add layer parent nodes (only in cortex view) z licznikiem
-  const usedLayers = new Set();
-  const layerCounts = {};
-  nodes.forEach(n => {
-    if (isInView(n, view)) {
-      if (view === 'cortex' && nodeToLayer[n.id]) {
-        usedLayers.add(nodeToLayer[n.id]);
-        layerCounts[nodeToLayer[n.id]] = (layerCounts[nodeToLayer[n.id]]||0) + 1;
-      }
-    }
-  });
-  if (view === 'cortex') {
-    layers.forEach(L => {
-      if (usedLayers.has(L.id)) {
-        visibleNodeIds.add(L.id);
-        const lbl = `${L.label} (${layerCounts[L.id]||0})`;
-        els.push({ data: { id: L.id, label: lbl, type: 'layer', desc: L.desc } });
-      }
-    });
+// === HELPERS ===
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in attrs) {
+    if (k === 'class') e.className = attrs[k];
+    else if (k === 'html') e.innerHTML = attrs[k];
+    else if (k === 'onclick') e.onclick = attrs[k];
+    else if (k === 'dataset') Object.assign(e.dataset, attrs[k]);
+    else e.setAttribute(k, attrs[k]);
   }
-
-  nodes.forEach(n => {
-    if (isInView(n, view)) {
-      visibleNodeIds.add(n.id);
-      const d = { id: n.id, label: n.label, type: n.type, desc: n.desc };
-      if (view === 'cortex' && nodeToLayer[n.id]) d.parent = nodeToLayer[n.id];
-      if (n.parent) d.parent = n.parent;  // zespol groups
-      els.push({ data: d });
-    }
-  });
-
-  edges.forEach((e, i) => {
-    // Dataflow: wszystkie krawędzie między widocznymi nodami niezależnie od e.v (cross-view dataflow)
-    const edgeInView = view === 'dataflow'
-      ? (visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target))
-      : ((view === 'all' || (e.v || []).includes(view)) && visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target));
-    if (edgeInView) {
-      els.push({ data: { id: 'e' + i, source: e.source, target: e.target, label: e.label } });
-    }
-  });
-
-  return els;
+  kids.forEach(k => { if (k != null) e.appendChild(typeof k === 'string' ? document.createTextNode(k) : k); });
+  return e;
 }
 
-// Node'y z backupem (badge w prawym dolnym rogu)
-const BACKED_UP = new Set([
-  // Archiwista → strych.mikr.us
-  'env_file', 'mikrus_pg',
-  // Git / GitHub
-  'repo_cortex', 'repo_pm', 'repo_zakupex', 'repo_janusz',
-  'repo_gustaw', 'repo_muszla', 'repo_voice',
-  // Aplikacje — kod i deploy idą z git
-  'app_pm', 'app_zakupex', 'app_janusz', 'app_gustaw',
-  'app_bot_voice', 'app_atlas', 'app_muszla',
-  // Hosting stron — deployowane z git przez FTP
-  'dhosting',
-]);
-
-// HTML overlay container for backup badges (renderowane nad node'ami, poza ich bryłą)
-const badgeLayer = document.createElement('div');
-badgeLayer.style.cssText = 'position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden; z-index:5;';
-document.getElementById('cy').style.position = 'relative';
-document.getElementById('cy').appendChild(badgeLayer);
-
-function applyBackupBadges() {
-  badgeLayer.innerHTML = '';
-  cy.nodes().forEach(node => {
-    if (!BACKED_UP.has(node.id())) return;
-    const pos = node.renderedPosition();
-    const w = node.renderedWidth();
-    const h = node.renderedHeight();
-    const size = Math.max(14, Math.min(22, w * 0.35));
-    // Prawy górny róg, nad node'em (offset ~60% promienia w prawo + w górę)
-    const bx = pos.x + w/2 - size*0.3;
-    const by = pos.y - h/2 - size*0.7;
-    const badge = document.createElement('div');
-    badge.style.cssText = `position:absolute; left:${bx}px; top:${by}px; width:${size}px; height:${size}px; background:#0f1117; border:1.5px solid #56d364; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,.5);`;
-    badge.innerHTML = `<img src="${ICON_BASE}/tabler/cloud-check.svg?color=%2356d364" style="width:${size*0.6}px;height:${size*0.6}px">`;
-    badge.title = 'Backup aktywny';
-    badgeLayer.appendChild(badge);
-  });
+function parseCronTime(label) {
+  // Wyciąga godzinę z labelu np. "pm-auto-scan (23:00)" → "23:00"
+  const m = label.match(/\((\d{1,2}:\d{2}|co \d+\s*\S+|wt \d{1,2}:\d{2}|nd \d{1,2}:\d{2}|pon \d{1,2}:\d{2}|mc|co \d+m? ?\d+-\d+|sob \d{1,2}:\d{2})\)/);
+  return m ? m[1] : '?';
+}
+function sortByCronTime(a, b) {
+  const ta = parseCronTime(a.label);
+  const tb = parseCronTime(b.label);
+  const re = /^\d{1,2}:\d{2}$/;
+  const ah = re.test(ta) ? parseInt(ta.split(':')[0]) : 99;
+  const bh = re.test(tb) ? parseInt(tb.split(':')[0]) : 99;
+  if (ah !== bh) return ah - bh;
+  return a.label.localeCompare(b.label);
 }
 
-// Re-render badges po każdym ruchu/zoomie/drag
-let badgeRaf = null;
-function scheduleBadgeUpdate() {
-  if (badgeRaf) return;
-  badgeRaf = requestAnimationFrame(() => {
-    badgeRaf = null;
-    applyBackupBadges();
-    if (typeof renderBQLogBadges === 'function') renderBQLogBadges();
-    if (typeof renderLiveStatusBadges === 'function') renderLiveStatusBadges();
-  });
+// === GROUP SCRIPTS BY DOMAIN ===
+// Heurystyka: po nazwie i opisie
+function scriptGroup(node) {
+  const id = node.id.toLowerCase();
+  const lbl = node.label.toLowerCase();
+  const desc = (node.desc || '').toLowerCase();
+  const blob = id + ' ' + lbl + ' ' + desc;
+  if (blob.includes('gmail')) return 'Gmail';
+  if (blob.includes('calendar')) return 'Calendar';
+  if (blob.includes('notion')) return 'Notion';
+  if (blob.includes('cloudflare') || blob.includes('cf ')) return 'Cloudflare';
+  if (blob.includes('seo') || blob.includes('search console') || blob.includes('gsc')) return 'SEO/GSC';
+  if (blob.includes('ga4') || blob.includes('analytics')) return 'GA4';
+  if (blob.includes('ads')) return 'Ads';
+  if (blob.includes('fireflies')) return 'Fireflies';
+  if (blob.includes('gbp') || blob.includes('business profile')) return 'GBP';
+  if (blob.includes('indexing')) return 'Indexing';
+  if (blob.includes('treningi') || blob.includes('suplement') || blob.includes('zdrow')) return 'Zdrowie';
+  if (blob.includes('context') || blob.includes('infra') || blob.includes('audit') || blob.includes('drift') || blob.includes('snapshot')) return 'Cortex core';
+  if (blob.includes('smoke') || blob.includes('health')) return 'Health';
+  if (blob.includes('admin') || blob.includes('workspace')) return 'Workspace';
+  if (blob.includes('content_pipeline') || blob.includes('rolki')) return 'Content';
+  if (blob.includes('whatsapp') || blob.includes('wa ')) return 'WhatsApp';
+  return 'Inne';
 }
 
-// === LAYOUTS ===
-function getLayout(view) {
-  if (view === 'biznesy') {
-    return cy.layout({
-      name: 'fcose',
-      quality: 'proof',
-      randomize: true,
-      nodeRepulsion: 18000,
-      idealEdgeLength: 170,
-      edgeElasticity: 0.25,
-      gravity: 0.15,
-      gravityRange: 3.8,
-      numIter: 3000,
-      padding: 60,
-      nodeDimensionsIncludeLabels: true,
-      packComponents: true,
-      animate: 'end',
-      animationDuration: 400,
-    });
-  }
-  if (view === 'dataflow') {
-    // Pozycje z buildDataflowElements (ele.position ustawiane per node)
-    return cy.layout({
-      name: 'preset',
-      fit: true,
-      padding: 60,
-      animate: 'end',
-      animationDuration: 300,
-    });
-  }
-  if (view === 'zespol') {
-    return cy.layout({
-      name: 'fcose',
-      animate: 'end',
-      animationDuration: 400,
-      quality: 'proof',
-      randomize: true,
-      nodeRepulsion: 10000,
-      idealEdgeLength: 100,
-      gravity: 0.3,
-      gravityRangeCompound: 1.5,
-      gravityCompound: 2.0,
-      nestingFactor: 0.1,
-      numIter: 3000,
-      padding: 30,
-      nodeSeparation: 40,
-      tile: true,
-      tilingPaddingVertical: 20,
-      tilingPaddingHorizontal: 20,
-      tilingCompareBy: (a, b) => {
-        const order = ['person_zarzad','person_management','person_kierownicy','person_specjalisci','person_pracownik_liniowy'];
-        const na = cy.getElementById(a).data('type');
-        const nb = cy.getElementById(b).data('type');
-        return order.indexOf(na) - order.indexOf(nb);
-      },
-      packComponents: true,
-    });
-  }
-  return cy.layout({
-    name: 'fcose',
-    animate: 'end',
-    animationDuration: 500,
-    quality: 'proof',
-    randomize: true,
-    nodeRepulsion: 22000,
-    idealEdgeLength: 170,
-    edgeElasticity: 0.35,
-    gravity: 0.15,
-    gravityRangeCompound: 2.5,
-    gravityCompound: 1.8,
-    nestingFactor: 0.08,
-    numIter: 3500,
-    padding: 60,
-    nodeSeparation: 120,
-    tile: true,
-    tilingPaddingVertical: 45,
-    tilingPaddingHorizontal: 45,
-    packComponents: true,
-    nodeDimensionsIncludeLabels: true,
-  });
-}
-
-// === CYTOSCAPE ===
-const cy = cytoscape({
-  container: document.getElementById('cy'),
-  elements: buildElements('cortex'),
-  style: [
-    {
-      selector: 'node',
-      style: {
-        'label': 'data(label)',
-        'text-valign': 'bottom',
-        'text-margin-y': 8,
-        'font-size': 10,
-        'font-family': '-apple-system, BlinkMacSystemFont, sans-serif',
-        'color': '#c9d1d9',
-        'text-outline-color': '#0f1117',
-        'text-outline-width': 2,
-        'text-wrap': 'wrap',
-        'text-max-width': 110,
-        'width': 36,
-        'height': 36,
-        'border-width': 1.5,
-        'border-color': '#30363d',
-      }
-    },
-    ...Object.entries(TYPES).map(([type, cfg]) => ({
-      selector: `node[type="${type}"]`,
-      style: {
-        'background-color': cfg.color,
-        'shape': cfg.shape,
-        'border-color': cfg.color,
-        'border-opacity': 0.4,
-        'background-image': `${ICON_BASE}/${cfg.icon}.svg?color=%23ffffff`,
-        'background-fit': 'contain',
-        'background-clip': 'none',
-        'background-width': '60%',
-        'background-height': '60%',
-        'background-image-opacity': 0.9,
-      }
-    })),
-    // Brand icon overrides — prawdziwe logo serwisów
-    ...(() => {
-      const brandIcons = {
-        // Vercel
-        vercel: 'simple-icons/vercel',
-        // Mikrus & servers
-        laptop: 'tabler/device-laptop',
-        strych: 'tabler/archive',
-        // APIs — brands
-        gmail_api: 'simple-icons/gmail',
-        calendar_api: 'simple-icons/googlecalendar',
-        notion_api_firm: 'simple-icons/notion',
-        notion_api_priv: 'simple-icons/notion',
-        cloudflare_api: 'simple-icons/cloudflare',
-        openai_api: 'simple-icons/openai',
-        gdrive_api: 'simple-icons/googledrive',
-        supabase: 'simple-icons/supabase',
-        apify: 'tabler/robot',
-        gbp_api: 'simple-icons/google',
-        fb_api: 'simple-icons/facebook',
-        google_ads_api: 'simple-icons/googleads',
-        google_admin_api: 'simple-icons/google',
-        indexing_api: 'simple-icons/google',
-        ga4_api: 'simple-icons/googleanalytics',
-        gsc_api: 'simple-icons/googlesearchconsole',
-        fireflies_api: 'tabler/microphone-2',
-        psi_api: 'simple-icons/pagespeedinsights',
-        mikrus_pg: 'simple-icons/postgresql',
-        dhosting_ftp: 'tabler/file-upload',
-        // Scripts that use brand
-        cloudflare_py: 'simple-icons/cloudflare',
-        google_ads_py: 'simple-icons/googleads',
-        ga4_py: 'simple-icons/googleanalytics',
-        search_console_py: 'simple-icons/googlesearchconsole',
-        fireflies_py: 'tabler/microphone-2',
-        notion_py: 'simple-icons/notion',
-        notion_replace_py: 'simple-icons/notion',
-        notion2email_py: 'simple-icons/notion',
-        gmail_py: 'simple-icons/gmail',
-        calendar_py: 'simple-icons/googlecalendar',
-        gbp_py: 'simple-icons/google',
-        google_admin_py: 'simple-icons/google',
-        indexing_py: 'simple-icons/google',
-        // Repos
-        repo_cortex: 'simple-icons/github',
-        repo_pm: 'simple-icons/github',
-        repo_zakupex: 'simple-icons/github',
-        repo_janusz: 'simple-icons/github',
-        repo_gustaw: 'simple-icons/github',
-        repo_muszla: 'simple-icons/github',
-        repo_voice: 'simple-icons/github',
-        // Apps
-        app_pm: 'simple-icons/nextdotjs',
-        app_zakupex: 'simple-icons/nextdotjs',
-        app_muszla: 'simple-icons/astro',
-        app_janusz: 'simple-icons/whatsapp',
-        app_gustaw: 'simple-icons/whatsapp',
-        app_bot_voice: 'simple-icons/openai',
-        app_atlas: 'tabler/map-2',
-        // MCP
-        mcp_chrome: 'simple-icons/googlechrome',
-        mcp_canva: 'simple-icons/canva',
-        mcp_fireflies: 'tabler/microphone-2',
-        mcp_gmail: 'simple-icons/gmail',
-        mcp_calendar: 'simple-icons/googlecalendar',
-        mcp_notion_ai: 'simple-icons/notion',
-        mcp_notion_firm: 'simple-icons/notion',
-        mcp_notion_priv: 'simple-icons/notion',
-        // Hosting
-        vercel: 'simple-icons/vercel',
-        // GCP specifics
-        cr_notion_backup: 'simple-icons/notion',
-        cr_supabase_backup: 'simple-icons/supabase',
-        cr_cloudflare_backup: 'simple-icons/cloudflare',
-        cr_recenzent: 'simple-icons/google',
-        cr_content: 'tabler/video',
-        gcp_bucket: 'simple-icons/googlecloudstorage',
-        gcp_ar: 'simple-icons/docker',
-        gcp_sm: 'tabler/key',
-        gcp_uptime: 'tabler/activity-heartbeat',
-        gcp: 'simple-icons/googlecloud',
-      };
-      return Object.entries(brandIcons).map(([id, icon]) => {
-        const isBrand = icon.startsWith('simple-icons/');
-        return {
-          selector: `#${id}`,
-          style: isBrand ? {
-            'background-image': `${ICON_BASE}/${icon}.svg?color=%23ffffff`,
-            'background-color': '#1c2128',
-            'background-width': '50%',
-            'background-height': '50%',
-            'border-color': '#30363d',
-            'border-opacity': 0.9,
-          } : {
-            'background-image': `${ICON_BASE}/${icon}.svg?color=%23ffffff`,
-          }
-        };
-      });
-    })(),
-    // Person sizes per hierarchy level
-    { selector: 'node[type="person_zarzad"]',            style: { 'width': 64, 'height': 64, 'font-size': 12, 'font-weight': 'bold', 'border-width': 3, 'border-color': '#f0e68c' } },
-    { selector: 'node[type="person_management"]',        style: { 'width': 52, 'height': 52, 'font-size': 11, 'font-weight': 'bold', 'border-width': 2.5 } },
-    { selector: 'node[type="person_kierownicy"]',        style: { 'width': 44, 'height': 44, 'font-size': 10 } },
-    { selector: 'node[type="person_specjalisci"]',       style: { 'width': 38, 'height': 38, 'font-size': 9 } },
-    { selector: 'node[type="person_pracownik_liniowy"]', style: { 'width': 32, 'height': 32, 'font-size': 9 } },
-    // Group parent (zespol view)
-    {
-      selector: 'node[type="group"]',
-      style: {
-        'background-color': '#161b22',
-        'background-opacity': 0.5,
-        'border-color': '#d29922',
-        'border-opacity': 0.5,
-        'border-width': 2,
-        'border-style': 'dashed',
-        'shape': 'round-rectangle',
-        'label': 'data(label)',
-        'text-valign': 'top',
-        'text-halign': 'center',
-        'text-margin-y': 18,
-        'font-size': 13,
-        'font-weight': 'bold',
-        'color': '#d29922',
-        'padding': '40px',
-        'background-image': 'none',
-        'min-width': 180,
-        'min-height': 120,
-      }
-    },
-    // Layer parent nodes — duże kontenery grupujące
-    {
-      selector: 'node[type="layer"]',
-      style: {
-        'background-color': '#0d1117',
-        'background-opacity': 0.85,
-        'border-color': '#58a6ff',
-        'border-opacity': 0.6,
-        'border-width': 2.5,
-        'border-style': 'solid',
-        'shape': 'round-rectangle',
-        'label': 'data(label)',
-        'text-valign': 'top',
-        'text-halign': 'left',
-        'text-margin-x': 22,
-        'text-margin-y': -6,
-        'font-size': 16,
-        'font-weight': 'bold',
-        'color': '#58a6ff',
-        'padding': '70px',
-        'background-image': 'none',
-        'min-width': 240,
-        'min-height': 180,
-        'corner-radius': '16px',
-      }
-    },
-    // Big hubs
-    { selector: '#repo_cortex', style: { 'width': 90, 'height': 90, 'font-size': 16, 'font-weight': 'bold', 'border-width': 3, 'border-color': '#3fb950', 'background-color': '#161b22', 'background-image': `${ICON_BASE}/tabler/brain.svg?color=%233fb950`, 'background-fit': 'contain', 'background-clip': 'none', 'background-width': '55%', 'background-height': '55%', 'shape': 'ellipse', 'color': '#3fb950' } },
-    { selector: '#biz_peg',     style: { 'width': 70, 'height': 70, 'font-size': 14, 'font-weight': 'bold', 'border-width': 3 } },
-    { selector: '#biz_pei',     style: { 'width': 56, 'height': 56, 'font-size': 12, 'font-weight': 'bold' } },
-    { selector: '#biz_peo',     style: { 'width': 56, 'height': 56, 'font-size': 12, 'font-weight': 'bold' } },
-    { selector: '#biz_per',     style: { 'width': 56, 'height': 56, 'font-size': 12, 'font-weight': 'bold' } },
-    // Kluczowe osoby — większe node'y
-    { selector: '#p_adi',       style: { 'width': 56, 'height': 56, 'font-size': 12, 'font-weight': 'bold', 'border-width': 3, 'border-color': '#f0e68c' } },
-    { selector: '#p_oliver',    style: { 'width': 52, 'height': 52, 'font-size': 12, 'font-weight': 'bold' } },
-    { selector: '#p_patrycja',  style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
-    { selector: '#p_ula',       style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
-    { selector: '#p_kamila',    style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
-    { selector: '#p_maja',      style: { 'width': 50, 'height': 50, 'font-size': 11, 'font-weight': 'bold' } },
-    // PEG jako ramka compound — brand parasolowy otacza PEI/PEO/PER, bez wypełnienia
-    { selector: '#biz_peg', style: {
-        'background-color': '#161b22', 'background-opacity': 0.3,
-        'border-color': '#f0e68c', 'border-width': 3, 'border-style': 'dashed',
-        'shape': 'round-rectangle', 'padding': '30px',
-        'label': 'data(label)', 'text-valign': 'top', 'text-halign': 'center',
-        'text-margin-y': -8, 'font-size': 14, 'font-weight': 'bold',
-        'color': '#f0e68c', 'background-image': 'none',
-        'width': 'label', 'height': 'label',
-    }},
-    // Dataflow pipeline headers — taśma z nazwą po lewej
-    { selector: 'node[type="df_header"]', style: {
-        'width': 160, 'height': 60, 'font-size': 11, 'font-weight': 'bold',
-        'text-wrap': 'wrap', 'text-max-width': '150px', 'text-valign': 'center',
-        'background-color': '#1c2128', 'border-color': '#f0883e', 'border-width': 2,
-        'background-image': 'none', 'color': '#f0883e', 'shape': 'round-rectangle',
-    }},
-    { selector: 'edge[source ^= "df_"]', style: {
-        'curve-style': 'straight', 'target-arrow-shape': 'triangle',
-        'line-color': '#58a6ff', 'target-arrow-color': '#58a6ff',
-        'opacity': 0.7, 'width': 2,
-    }},
-    // Edges — labels hidden by default, dim lines
-    {
-      selector: 'edge',
-      style: {
-        'width': 1,
-        'line-color': '#21262d',
-        'target-arrow-color': '#21262d',
-        'target-arrow-shape': 'triangle',
-        'curve-style': 'bezier',
-        'arrow-scale': 0.6,
-        'opacity': 0.18,
-        'font-size': 8,
-        'color': '#484f58',
-        'text-outline-color': '#0f1117',
-        'text-outline-width': 1.5,
-        'text-rotation': 'autorotate',
-      }
-    },
-    // Show edge label on hover
-    {
-      selector: 'edge.show-label',
-      style: {
-        'opacity': 1,
-        'width': 2,
-        'line-color': '#484f58',
-        'target-arrow-color': '#484f58',
-      }
-    },
-    // Interaction states
-    { selector: 'node.highlighted', style: { 'border-width': 4, 'border-color': '#f0e68c', 'font-weight': 'bold', 'z-index': 999 } },
-    { selector: 'node.faded', style: { 'opacity': 0.15 } },
-    { selector: 'edge.faded', style: { 'opacity': 0.08 } },
-    { selector: 'edge.highlighted', style: { 'label': 'data(label)', 'line-color': '#58a6ff', 'target-arrow-color': '#58a6ff', 'width': 2.5, 'opacity': 1, 'z-index': 999 } },
-    { selector: 'node.search-match', style: { 'border-width': 4, 'border-color': '#f85149', 'font-size': 12, 'font-weight': 'bold' } },
-    { selector: 'node.hover', style: { 'border-width': 3, 'border-color': '#58a6ff', 'border-opacity': 1, 'z-index': 900 } },
-    { selector: 'node.hub', style: { 'width': 54, 'height': 54, 'font-size': 12, 'font-weight': 'bold', 'border-width': 3 } },
-    { selector: 'node[type="app"]', style: { 'width': 44, 'height': 44, 'font-size': 11, 'font-weight': 'bold' } },
-    { selector: 'node[type="core"]', style: { 'width': 36, 'height': 36, 'font-size': 9 } },
-    { selector: 'node[type="script"]', style: { 'width': 34, 'height': 34, 'font-size': 9 } },
-    { selector: 'node[type="api"]', style: { 'width': 38, 'height': 38, 'font-size': 10 } },
-    { selector: 'node[type="sched"]', style: { 'width': 32, 'height': 32, 'font-size': 9, 'opacity': 0.85 } },
-    { selector: 'node[type="mcp"]', style: { 'width': 34, 'height': 34, 'font-size': 9 } },
-    { selector: 'node.orphan-highlight', style: { 'border-width': 4, 'border-color': '#f85149', 'border-opacity': 1, 'font-weight': 'bold', 'font-size': 11, 'color': '#f85149', 'z-index': 999 } },
-  ],
-  layout: {
-    name: 'fcose',
-    animate: false,
-    quality: 'proof',
-    randomize: true,
-    nodeRepulsion: 7000,
-    idealEdgeLength: 110,
-    edgeElasticity: 0.45,
-    gravity: 0.25,
-    gravityRangeCompound: 1.2,
-    gravityCompound: 1.0,
-    nestingFactor: 0.3,
-    numIter: 2500,
-    padding: 30,
-    nodeSeparation: 60,
-    tile: true,
-    tilingPaddingVertical: 25,
-    tilingPaddingHorizontal: 25,
-    packComponents: true,
-  },
-  minZoom: 0.2,
-  maxZoom: 4,
-  wheelSensitivity: 0.3,
-});
-
-// === VIEW SWITCHING ===
-document.querySelectorAll('.views button').forEach(btn => {
-  btn.addEventListener('click', function() {
-    const view = this.dataset.view;
-    activeView = view;
-    document.querySelectorAll('.views button').forEach(b => b.classList.remove('active'));
-    this.classList.add('active');
-
-    cy.elements().remove();
-    document.querySelectorAll('.live-badge').forEach(el => el.remove());
-    cy.add(buildElements(view));
-    getLayout(view).run();
-    cy.fit(undefined, 40);
-    applyBackupBadges();
-    if (typeof renderLiveStatusBadges === 'function') setTimeout(renderLiveStatusBadges, 400);
-
-    showWelcome(view);
-    searchInput.value = '';
-    updateLegend(view);
-    updateStats(view);
-    orphansMode = false;
-    document.getElementById('btn-orphans').style.background = 'transparent';
-    document.getElementById('btn-orphans').style.color = '#8b949e';
-    document.getElementById('btn-orphans').style.borderColor = '#30363d';
-    updateOrphansCount();
-    applyHubClass();
-  });
-});
-
-// === TOOLTIP ===
-const tooltipEl = document.getElementById('tooltip');
-let tooltipTimeout = null;
-
-cy.on('mouseover', 'node', function(e) {
-  clearTimeout(tooltipTimeout);
-  const node = e.target;
-  if (node.data('type') !== 'group' && node.data('type') !== 'layer') node.addClass('hover');
-  const d = node.data();
-  const t = TYPES[d.type];
-  const pos = e.renderedPosition;
-  const backupBadge = BACKED_UP.has(d.id) ? `<div style="font-size:10px;color:#56d364;margin-top:2px"><img src="${ICON_BASE}/tabler/cloud-check.svg?color=%2356d364" style="width:11px;height:11px;vertical-align:middle;margin-right:3px">backup aktywny</div>` : '';
-  tooltipEl.innerHTML = `<div class="tt-label">${d.label}</div><div class="tt-type" style="color:${t.color}"><img src="${ICON_BASE}/${t.icon}.svg?color=${encodeURIComponent(t.color)}" style="width:12px;height:12px;vertical-align:middle;margin-right:4px">${t.label}</div>${backupBadge}<div class="tt-desc">${d.desc}</div>`;
-  tooltipEl.style.display = 'block';
-  const cyRect = document.getElementById('cy').getBoundingClientRect();
-  let tx = cyRect.left + pos.x + 20;
-  let ty = cyRect.top + pos.y + 20;
-  const tw = tooltipEl.offsetWidth;
-  const th = tooltipEl.offsetHeight;
-  if (tx + tw > window.innerWidth - 10) tx = window.innerWidth - tw - 10;
-  if (ty + th > window.innerHeight - 10) ty = window.innerHeight - th - 10;
-  if (tx < 10) tx = 10;
-  if (ty < 10) ty = 10;
-  tooltipEl.style.left = tx + 'px';
-  tooltipEl.style.top = ty + 'px';
-});
-cy.on('mouseout', 'node', function(e) {
-  e.target.removeClass('hover');
-  tooltipTimeout = setTimeout(() => { tooltipEl.style.display = 'none'; }, 100);
-});
-cy.on('tap', 'node', function() { tooltipEl.style.display = 'none'; });
-cy.on('pan zoom', function() { tooltipEl.style.display = 'none'; });
-
-// === SIDEBAR ===
-const sidebar = document.getElementById('sidebar');
-
-const VIEW_INFO = {
-  cortex: { title: 'Cortex', icon: '\u{1F9E0}', desc: 'System operacyjny AI — skrypty, API, MCP, timery, aplikacje i repozytoria. Wszystko co napędza PEG od strony technologicznej.', hub: 'repo_cortex' },
-  biznesy: { title: 'Biznesy', icon: '\u{1F3E2}', desc: 'Struktura grupy PEG — spółki (PEI, PEO, PER), punkty operacyjne i projekty strategiczne.', hub: 'biz_peg' },
-  zespol: { title: 'Zespół', icon: '\u{1F465}', desc: 'Pracownicy PEG — kto gdzie pracuje, powiązania z punktami i spółkami.', hub: 'p_adrianszufel' },
-  dataflow: { title: 'Dataflow', icon: '\u{1F30A}', desc: 'Gdzie żyją dane PEG. Lewo: APKI (źródła danych — PM, Zakupex, Janusz). Środek: MAGAZYNY (bazy, storage, API — Supabase, Notion, BigQuery, GCS). Prawo: KONSUMENCI (skrypty Cortex, crony, raporty). Strzałka = przepływ danych.' },
-};
-
-function showWelcome(view) {
-  const info = VIEW_INFO[view];
-  const visNodes = nodes.filter(n => n.v.includes(view));
-  const visEdges = edges.filter(e => e.v.includes(view));
-  const typeCounts = {};
-  visNodes.forEach(n => {
-    if (n.type === 'group' || n.type === 'layer') return;  // kontenery nie w statsach
-    typeCounts[n.type] = (typeCounts[n.type] || 0) + 1;
-  });
-  const typeList = Object.entries(typeCounts).map(([k, v]) => `<span style="color:${TYPES[k].color}">\u25CF</span> ${TYPES[k].label}: ${v}`).join('<br>');
-
-  // Suma kosztów dla widoku (tylko te z meta.cost)
-  let costSection = '';
-  if (typeof nodeMeta !== 'undefined') {
-    const costsInView = visNodes
-      .map(n => nodeMeta[n.id])
-      .filter(m => m && typeof m.cost === 'number');
-    if (costsInView.length > 0) {
-      const total = costsInView.reduce((s, m) => s + m.cost, 0);
-      const breakdown = costsInView
-        .filter(m => m.cost > 0)
-        .sort((a, b) => b.cost - a.cost)
-        .slice(0, 5)
-        .map((m, i) => {
-          const node = visNodes.find(n => nodeMeta[n.id] === m);
-          return `${node.label}: ${m.cost} zł`;
-        }).join(' · ');
-      costSection = `<div class="view-desc" style="border-color:#f0883e44"><h3 style="color:#f0883e">💰 Koszty znane</h3><p style="font-size:14px;color:#e1e4e8;margin-bottom:4px"><strong>~${total} zł/mc</strong> (${costsInView.length} pozycji)</p><p style="font-size:11px;color:#8b949e;margin:0">${breakdown}</p></div>`;
-    }
-  }
-
-  sidebar.innerHTML = `
-    <div class="welcome">
-      <h2>${info.icon} ${info.title}</h2>
-      <div class="view-desc">
-        <p>${info.desc}</p>
-      </div>
-      ${costSection}
-      <div class="detail"><div class="detail-label">Na mapie</div><div class="detail-value" style="font-size:12px;line-height:1.6">${typeList}</div></div>
-      <div style="margin-top:12px">
-        <div class="shortcut"><kbd>/</kbd> Szukaj</div>
-        <div class="shortcut"><kbd>Klik</kbd> Detale node'a</div>
-        <div class="shortcut"><kbd>Scroll</kbd> Zoom</div>
-        <div class="shortcut"><kbd>Esc</kbd> Reset widoku</div>
-        <div class="shortcut"><kbd>Legenda</kbd> Klik = filtruj typ</div>
-      </div>
-      <p class="hint">Najedź na node żeby zobaczyć opis. Kliknij żeby zobaczyć połączenia.</p>
-    </div>
-  `;
-}
-
-showWelcome('cortex');
-
-function showNodeDetails(node) {
-  const d = node.data();
-  const t = TYPES[d.type];
-  const connected = node.connectedEdges().connectedNodes().filter(n => n.id() !== node.id());
-
-  let connectionsHtml = '';
-  if (connected.length > 0) {
-    connectionsHtml = '<div class="connections"><h3>Połączenia (' + connected.length + ')</h3>';
-    connected.forEach(n => {
-      const nt = TYPES[n.data('type')];
-      connectionsHtml += `<div class="conn-item" data-id="${n.id()}"><img src="${ICON_BASE}/${nt.icon}.svg?color=${encodeURIComponent(nt.color)}" style="width:14px;height:14px;vertical-align:middle;margin-right:6px"> ${n.data('label')} <span style="color:#484f58;font-size:11px">${nt.label}</span></div>`;
-    });
-    connectionsHtml += '</div>';
-  }
-
-  // Link do usługi zewnętrznej (klik → open)
-  const serviceUrls = {
-    repo_cortex: 'https://github.com/aszufel/Cortex',
-    repo_pm: 'https://github.com/aszufel/PM',
-    repo_zakupex: 'https://github.com/aszufel/Zakupex',
-    repo_janusz: 'https://github.com/aszufel/Janusz',
-    repo_gustaw: 'https://github.com/aszufel/Gustaw',
-    repo_muszla: 'https://github.com/aszufel/muszla.pl',
-    repo_voice: 'https://github.com/aszufel/voice-notion-app',
-    vercel: 'https://vercel.com/dashboard',
-    app_pm: 'https://price.partnerexpert.work',
-    app_zakupex: 'https://zakupex.vercel.app',
-    app_muszla: 'https://muszlakolobrzeg.pl',
-    mikrus: 'https://mikr.us/panel/',
-    dhosting: 'https://panel.dhosting.pl/',
-    gcp: 'https://console.cloud.google.com/home/dashboard?project=ai-council-487609',
-    gcp_sm: 'https://console.cloud.google.com/security/secret-manager?project=ai-council-487609',
-    gcp_bucket: 'https://console.cloud.google.com/storage/browser/peg-backups-cortex?project=ai-council-487609',
-    gcp_ar: 'https://console.cloud.google.com/artifacts?project=ai-council-487609',
-    gcp_uptime: 'https://console.cloud.google.com/monitoring/uptime?project=ai-council-487609',
-    cr_notion_backup: 'https://console.cloud.google.com/run/detail/europe-central2/notion-backup?project=ai-council-487609',
-    cr_supabase_backup: 'https://console.cloud.google.com/run/detail/europe-central2/supabase-backup?project=ai-council-487609',
-    cr_cloudflare_backup: 'https://console.cloud.google.com/run/detail/europe-central2/cloudflare-backup?project=ai-council-487609',
-    cr_recenzent: 'https://console.cloud.google.com/run/detail/europe-central2/recenzent?project=ai-council-487609',
-    cr_content: 'https://console.cloud.google.com/run/jobs/details/europe-central2/content-pipeline?project=ai-council-487609',
-    notion_api_firm: 'https://www.notion.so/',
-    notion_api_priv: 'https://www.notion.so/',
-    supabase: 'https://supabase.com/dashboard/projects',
-    cloudflare_api: 'https://dash.cloudflare.com/',
-  };
-  const url = serviceUrls[d.origId || d.id];
-  const openBtn = url ? `<a href="${url}" target="_blank" style="display:inline-block;margin-left:8px;padding:3px 10px;background:#58a6ff22;color:#58a6ff;border:1px solid #58a6ff44;border-radius:6px;font-size:11px;text-decoration:none">→ Open</a>` : '';
-
-  // Rozszerzone pola z nodeMeta (opcjonalne). Fallback: desc
-  // Dataflow duplikuje nody — używamy origId do lookupu meta
-  const lookupId = d.origId || d.id;
-  const meta = (typeof nodeMeta !== 'undefined' && nodeMeta[lookupId]) || {};
-  const whatTxt = meta.what || d.desc || '';
-  const sections = [];
-  if (whatTxt) sections.push(`<div class="detail"><div class="detail-label">Co to</div><div class="detail-value">${whatTxt}</div></div>`);
-  if (Array.isArray(meta.does) && meta.does.length) {
-    const items = meta.does.map(x => `<li style="margin:2px 0">${x}</li>`).join('');
-    sections.push(`<div class="detail"><div class="detail-label">Co robi</div><div class="detail-value"><ul style="padding-left:16px;margin:0">${items}</ul></div></div>`);
-  }
-  if (meta.why) sections.push(`<div class="detail"><div class="detail-label">Dlaczego istnieje</div><div class="detail-value" style="color:#8b949e;font-style:italic">${meta.why}</div></div>`);
-  if (meta.status) sections.push(`<div class="detail"><div class="detail-label">Status</div><div class="detail-value">${meta.status}</div></div>`);
-  if (typeof meta.cost === 'number') {
-    const costLabel = meta.cost === 0 ? 'darmowe (free tier)' : `${meta.cost} zł/mc`;
-    sections.push(`<div class="detail"><div class="detail-label">Koszt</div><div class="detail-value">${costLabel}</div></div>`);
-  }
-  const metaUrl = meta.url;
-  const finalUrl = metaUrl || url;
-  const displayUrl = metaUrl ? metaUrl.replace(/^https?:\/\//, '') : null;
-  if (displayUrl) {
-    sections.push(`<div class="detail"><div class="detail-label">Link</div><div class="detail-value"><a href="${metaUrl}" target="_blank" style="color:#58a6ff;text-decoration:none">${displayUrl} ↗</a></div></div>`);
-  }
-  const finalOpenBtn = finalUrl ? `<a href="${finalUrl}" target="_blank" style="display:inline-block;margin-left:8px;padding:3px 10px;background:#58a6ff22;color:#58a6ff;border:1px solid #58a6ff44;border-radius:6px;font-size:11px;text-decoration:none">→ Open</a>` : '';
-
-  sidebar.innerHTML = `
-    <button class="back-btn" id="backBtn">← Powrót</button>
-    <h2>${d.label}${finalOpenBtn}</h2>
-    <span class="node-type" style="background:${t.color}22;color:${t.color};border:1px solid ${t.color}44"><img src="${ICON_BASE}/${t.icon}.svg?color=${encodeURIComponent(t.color)}" style="width:12px;height:12px;vertical-align:middle;margin-right:4px">${t.label}</span>
-    ${sections.join('')}
-    ${connectionsHtml}
-  `;
-
-  document.getElementById('backBtn').addEventListener('click', () => {
-    cy.elements().removeClass('highlighted faded search-match');
-    showWelcome(activeView);
-  });
-
-  sidebar.querySelectorAll('.conn-item').forEach(el => {
-    el.addEventListener('click', () => {
-      const targetNode = cy.getElementById(el.dataset.id);
-      highlightNode(targetNode);
-      cy.animate({ center: { eles: targetNode }, zoom: 2 }, { duration: 300 });
-    });
-  });
-}
-
-function highlightNode(node) {
-  cy.elements().removeClass('highlighted faded search-match');
-  const neighborhood = node.closedNeighborhood();
-  cy.elements().not(neighborhood).addClass('faded');
-  neighborhood.addClass('highlighted');
-  node.addClass('highlighted');
-  showNodeDetails(node);
-}
-
-cy.on('tap', 'node', function(e) { highlightNode(e.target); });
-cy.on('tap', function(e) {
-  if (e.target === cy) {
-    cy.elements().removeClass('highlighted faded search-match show-label');
-    showWelcome(activeView);
-  }
-});
-
-// Edge hover — show label (only if label is non-empty)
-cy.on('mouseover', 'edge', function(e) {
-  const edge = e.target;
-  edge.addClass('show-label');
-  if (edge.data('label')) edge.style('label', edge.data('label'));
-});
-cy.on('mouseout', 'edge', function(e) {
-  e.target.removeClass('show-label');
-  e.target.style('label', '');
-});
-
-// === SEARCH z AUTOCOMPLETE ===
-const searchInput = document.getElementById('search');
-const acList = document.getElementById('autocomplete');
-let acActive = -1;
-let acMatches = [];
-
-function hideAutocomplete() {
-  acList.style.display = 'none';
-  acActive = -1;
-  acMatches = [];
-}
-
-function jumpToNode(nodeId) {
-  const targetNode = cy.getElementById(nodeId);
-  if (!targetNode || !targetNode.length) return;
-  highlightNode(targetNode);
-  cy.animate({ center: { eles: targetNode }, zoom: 2 }, { duration: 300 });
-  hideAutocomplete();
-}
-
-function renderAutocomplete(q) {
-  if (!q) { hideAutocomplete(); return; }
-  acMatches = cy.nodes().filter(n => {
-    if (n.data('type') === 'group' || n.data('type') === 'layer') return false;
-    return n.data('label').toLowerCase().includes(q) ||
-           (n.data('desc') || '').toLowerCase().includes(q) ||
-           n.data('type').toLowerCase().includes(q);
-  }).toArray().slice(0, 10);
-
-  if (acMatches.length === 0) { hideAutocomplete(); return; }
-
-  acList.innerHTML = acMatches.map((n, idx) => {
-    const d = n.data();
-    const t = TYPES[d.type];
-    return `<div class="autocomplete-item${idx === acActive ? ' active' : ''}" data-id="${n.id()}" data-idx="${idx}"><img src="${ICON_BASE}/${t.icon}.svg?color=${encodeURIComponent(t.color)}" style="width:12px;height:12px"> ${d.label} <span class="ac-type">${t.label}</span></div>`;
-  }).join('');
-  acList.style.display = 'block';
-
-  acList.querySelectorAll('.autocomplete-item').forEach(el => {
-    el.addEventListener('mousedown', (e) => { e.preventDefault(); jumpToNode(el.dataset.id); searchInput.value = ''; });
-  });
-}
-
-searchInput.addEventListener('input', function() {
-  const q = this.value.toLowerCase().trim();
-  cy.elements().removeClass('search-match faded highlighted');
-  if (!q) { hideAutocomplete(); showWelcome(activeView); return; }
-
-  renderAutocomplete(q);
-
-  const matches = cy.nodes().filter(n =>
-    (n.data('type') !== 'group' && n.data('type') !== 'layer') &&
-    (n.data('label').toLowerCase().includes(q) ||
-     (n.data('desc') || '').toLowerCase().includes(q) ||
-     n.data('type').toLowerCase().includes(q))
-  );
-
-  if (matches.length > 0) {
-    cy.nodes().not(matches).addClass('faded');
-    cy.edges().addClass('faded');
-    matches.addClass('search-match');
-    matches.connectedEdges().removeClass('faded');
-  }
-});
-
-searchInput.addEventListener('keydown', function(e) {
-  if (acMatches.length === 0) return;
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    acActive = (acActive + 1) % acMatches.length;
-    renderAutocomplete(this.value.toLowerCase().trim());
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    acActive = (acActive - 1 + acMatches.length) % acMatches.length;
-    renderAutocomplete(this.value.toLowerCase().trim());
-  } else if (e.key === 'Enter' && acActive >= 0) {
-    e.preventDefault();
-    jumpToNode(acMatches[acActive].id());
-    this.value = '';
-  } else if (e.key === 'Escape') {
-    hideAutocomplete();
-  }
-});
-
-searchInput.addEventListener('blur', () => setTimeout(hideAutocomplete, 150));
-
-// === LEGEND (clickable — toggle type visibility) ===
-const hiddenTypes = new Set();
-
-function updateLegend(view) {
-  hiddenTypes.clear();
-  const visibleTypes = new Set();
-  nodes.forEach(n => {
-    if (n.type === 'group' || n.type === 'layer') return;  // kontenery nie w legendzie
-    if (view === 'all' || n.v.includes(view)) visibleTypes.add(n.type);
-  });
-  const legendEl = document.getElementById('legend');
-  legendEl.innerHTML = Object.entries(TYPES)
-    .filter(([k]) => visibleTypes.has(k))
-    .map(([k, v]) => {
-      const count = nodes.filter(n => n.type === k && (view === 'all' || n.v.includes(view))).length;
-      return `<div class="legend-item" data-type="${k}" style="cursor:pointer"><div class="legend-dot" style="background:${v.color}"><img src="${ICON_BASE}/${v.icon}.svg?color=%23ffffff" alt=""></div>${v.label} (${count})</div>`;
-    }).join('');
-
-  legendEl.querySelectorAll('.legend-item').forEach(el => {
-    el.addEventListener('click', () => {
-      const type = el.dataset.type;
-      if (hiddenTypes.has(type)) {
-        hiddenTypes.delete(type);
-        el.style.opacity = '1';
-      } else {
-        hiddenTypes.add(type);
-        el.style.opacity = '0.3';
-      }
-      // Apply filter
-      cy.nodes().forEach(n => {
-        if (hiddenTypes.has(n.data('type'))) {
-          n.style('display', 'none');
-        } else {
-          n.style('display', 'element');
-        }
-      });
-      cy.edges().forEach(e => {
-        const srcHidden = hiddenTypes.has(cy.getElementById(e.data('source')).data('type'));
-        const tgtHidden = hiddenTypes.has(cy.getElementById(e.data('target')).data('type'));
-        e.style('display', (srcHidden || tgtHidden) ? 'none' : 'element');
-      });
-    });
-  });
-}
-
-function updateStats(view) {
-  const visNodes = nodes.filter(n => view === 'all' || n.v.includes(view));
-  const visEdges = edges.filter(e => view === 'all' || e.v.includes(view));
-  document.getElementById('stats').textContent =
-    `${visNodes.length} nodes \u00B7 ${visEdges.length} edges \u00B7 Scroll = zoom \u00B7 Klik = detale \u00B7 / = szukaj \u00B7 Esc = reset`;
-}
-
-updateLegend('cortex');
-updateStats('cortex');
-
-// Hub class — node'y z wieloma połączeniami wizualnie większe
-function applyHubClass() {
-  cy.nodes().not(':parent').forEach(n => {
-    if (n.degree() > 8) n.addClass('hub');
-    else n.removeClass('hub');
-  });
-}
-applyHubClass();
-
-// Sieroty — podświetl izolowane node'y
-let orphansMode = false;
-function getOrphans() {
-  return cy.nodes().not(':parent').filter(n => n.degree() === 0 && n.data('type') !== 'layer' && n.data('type') !== 'group');
-}
-function updateOrphansCount() {
-  document.getElementById('orphans-count').textContent = getOrphans().length;
-}
-function toggleOrphans() {
-  orphansMode = !orphansMode;
-  const btn = document.getElementById('btn-orphans');
-  if (orphansMode) {
-    const orphans = getOrphans();
-    cy.nodes().not(':parent').addClass('faded');
-    cy.edges().addClass('faded');
-    orphans.removeClass('faded').addClass('orphan-highlight');
-    btn.style.background = '#f85149';
-    btn.style.color = '#fff';
-    btn.style.borderColor = '#f85149';
-    if (orphans.length > 0) cy.fit(orphans, 80);
-  } else {
-    cy.nodes().removeClass('faded').removeClass('orphan-highlight');
-    cy.edges().removeClass('faded');
-    btn.style.background = 'transparent';
-    btn.style.color = '#8b949e';
-    btn.style.borderColor = '#30363d';
-    cy.fit(null, 40);
-  }
-}
-document.getElementById('btn-orphans').addEventListener('click', toggleOrphans);
-updateOrphansCount();
-
-// Badge update na każdą zmianę viewport/pozycji
-cy.on('pan zoom', scheduleBadgeUpdate);
-cy.on('position', 'node', scheduleBadgeUpdate);
-cy.on('layoutstop', scheduleBadgeUpdate);
-cy.on('layoutstop', applyHubClass);
-window.addEventListener('resize', scheduleBadgeUpdate);
-
-// Auto-focus hub node on load
-setTimeout(() => {
-  applyBackupBadges();
-  const hub = cy.getElementById('repo_cortex');
-  if (hub.length) {
-    cy.animate({ center: { eles: hub }, zoom: 1.2 }, { duration: 800, complete: scheduleBadgeUpdate });
-  }
-}, 500);
-
-// === KEYBOARD ===
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    cy.elements().removeClass('highlighted faded search-match');
-    showWelcome(activeView);
-    searchInput.value = '';
-  }
-  if (e.key === '/' && document.activeElement !== searchInput) {
-    e.preventDefault();
-    searchInput.focus();
-  }
-});
-
-// === DEEP LINK (hash routing) ===
-function applyHash() {
-  const hash = location.hash.replace('#', '');
-  if (['cortex', 'biznesy', 'zespol'].includes(hash) && hash !== activeView) {
-    document.querySelector(`.views button[data-view="${hash}"]`).click();
-  }
-}
-applyHash();
-window.addEventListener('hashchange', applyHash);
-
-// Update hash on view switch
-document.querySelectorAll('.views button').forEach(btn => {
-  btn.addEventListener('click', function() {
-    history.replaceState(null, '', '#' + this.dataset.view);
-  });
-});
-
-// === EXPORT PNG ===
-document.getElementById('btn-export').addEventListener('click', () => {
-  const png = cy.png({ full: true, scale: 2, bg: '#0f1117' });
-  const a = document.createElement('a');
-  a.href = png;
-  a.download = `atlas-${activeView}-${new Date().toISOString().slice(0,10)}.png`;
-  a.click();
-});
-
-// === LEGEND TOGGLE (mobile) ===
-const legendToggle = document.getElementById('legendToggle');
-const legendEl2 = document.getElementById('legend');
-legendToggle.addEventListener('click', () => {
-  legendEl2.classList.toggle('collapsed');
-  legendToggle.textContent = legendEl2.classList.contains('collapsed') ? '▼ Legenda' : '▲ Legenda';
-});
-
-// === AUTO-UPDATE TIMESTAMP (z git log przez GitHub API) ===
-(async function updateTimestamp() {
-  try {
-    const res = await fetch('https://api.github.com/repos/aszufel/atlas/commits?per_page=1');
-    if (!res.ok) return;
-    const commits = await res.json();
-    if (!commits?.[0]?.commit?.author?.date) return;
-    const d = new Date(commits[0].commit.author.date);
-    const iso = d.toISOString().slice(0, 10);
-    const hhmm = d.toISOString().slice(11, 16);
-    document.getElementById('updated-ts').textContent = `updated: ${iso} ${hhmm} UTC`;
-  } catch (e) {
-    document.getElementById('updated-ts').textContent = '';
-  }
-})();
-
-// === LIVE STATUS (fetchuje health-check state.json przez atlas-status Cloud Function) ===
+// === RENDER: HEALTH BANNER (live z atlas-status endpoint) ===
 const LIVE_STATUS_URL = 'https://europe-central2-ai-council-487609.cloudfunctions.net/atlas-status';
-// Mapa nazw z health-check → node ID w atlasie
-const LIVE_STATUS_MAP = {
-  'PM app': 'app_pm',
-  'ZakupEX': 'app_zakupex',
-  'Janusz API': 'app_janusz',
-  'IND.U WWW': null,   // brak 1:1 node (strona statyczna)
-  'Sunday WWW': null,
-  'PEG WWW': null,
-  'Muszla WWW': 'app_muszla',
-};
-let liveStatusCache = null;
-
-function renderLiveStatusBadges() {
-  if (!liveStatusCache) return;
-  // Usuń stare badges
-  document.querySelectorAll('.live-badge').forEach(el => el.remove());
-
-  Object.entries(liveStatusCache).forEach(([apiName, status]) => {
-    const nodeId = LIVE_STATUS_MAP[apiName];
-    if (!nodeId) return;
-    const node = cy.getElementById(nodeId);
-    if (!node || !node.length || !node.visible()) return;
-    const bbox = node.renderedBoundingBox();
-    const badge = document.createElement('div');
-    badge.className = 'live-badge';
-    const ok = status.ok === true;
-    const color = ok ? '#3fb950' : '#f85149';
-    badge.style.cssText = `position:absolute;left:${bbox.x2 - 14}px;top:${bbox.y1 + 2}px;width:10px;height:10px;border-radius:50%;background:${color};box-shadow:0 0 6px ${color};border:2px solid #0f1117;pointer-events:none;z-index:20;`;
-    badge.title = `${apiName}: ${ok ? 'OK' : 'DOWN'} (HTTP ${status.code || '?'}, checked ${new Date(status.checked_at).toLocaleString('pl-PL')})`;
-    badgeLayer.appendChild(badge);
-  });
-}
+let liveStatus = null;
 
 async function fetchLiveStatus() {
+  const pills = document.getElementById('health-pills');
+  pills.innerHTML = '<span style="color:var(--muted);font-size:12px">⏳ ładuję live status…</span>';
   try {
     const res = await fetch(LIVE_STATUS_URL, { cache: 'no-store' });
-    if (!res.ok) return;
-    liveStatusCache = await res.json();
-    renderLiveStatusBadges();
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    liveStatus = await res.json();
+    renderHealthBanner();
   } catch (e) {
+    pills.innerHTML = '<span style="color:var(--err);font-size:12px">⚠️ nie udało się pobrać statusu (' + e.message + ')</span>';
     console.warn('Live status fetch failed:', e);
   }
 }
 
-// Uruchom przy starcie + co 60s
-fetchLiveStatus();
-setInterval(fetchLiveStatus, 60000);
-// Odśwież przy zmianach widoku/zoomu
-cy.on('pan zoom', () => renderLiveStatusBadges());
+function renderHealthBanner() {
+  const pills = document.getElementById('health-pills');
+  const time = document.getElementById('health-time');
+  if (!liveStatus) return;
+  pills.innerHTML = '';
+  let okN = 0, errN = 0, ts = null;
+  Object.entries(liveStatus).forEach(([name, st]) => {
+    const ok = st.ok === true;
+    if (ok) okN++; else errN++;
+    if (st.checked_at && !ts) ts = st.checked_at;
+    const pill = el('span', { class: 'h-pill', title: `${name}: ${ok ? 'OK' : 'DOWN'} (HTTP ${st.code || '?'})` });
+    pill.appendChild(el('span', { class: 'h-dot ' + (ok ? 'ok' : 'err') }));
+    pill.appendChild(document.createTextNode(name));
+    pills.appendChild(pill);
+  });
+  const summary = el('span', { class: 'h-pill', style: 'font-weight:600' },
+    okN + ' OK', errN > 0 ? ` · ${errN} 🔴` : ''
+  );
+  pills.insertBefore(summary, pills.firstChild);
+  if (ts) {
+    const d = new Date(ts);
+    time.textContent = 'live: ' + d.toLocaleString('pl-PL', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+  }
+}
 
-// === BQ LOGGING BADGES — mała ikona w prawym dolnym rogu gdzie apka loguje do pipeline_logs ===
-const BQ_LOGGING_NODES = new Set([
-  'app_pm', 'app_zakupex', 'app_janusz',
-  'cr_recenzent', 'cr_health_check',
-  'cr_notion_backup', 'cr_supabase_backup', 'cr_cloudflare_backup'
-]);
-
-function renderBQLogBadges() {
-  document.querySelectorAll('.bq-log-badge').forEach(el => el.remove());
-  BQ_LOGGING_NODES.forEach(nodeId => {
-    const node = cy.getElementById(nodeId);
-    if (!node || !node.length || !node.visible()) return;
-    const pos = node.renderedPosition();
-    const w = node.renderedWidth();
-    const h = node.renderedHeight();
-    const size = Math.max(14, Math.min(20, w * 0.32));
-    // Prawy dolny róg
-    const bx = pos.x + w/2 - size*0.3;
-    const by = pos.y + h/2 - size*0.7;
-    const badge = document.createElement('div');
-    badge.className = 'bq-log-badge';
-    badge.style.cssText = `position:absolute; left:${bx}px; top:${by}px; width:${size}px; height:${size}px; background:#0f1117; border:1.5px solid #4285f4; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,.5);`;
-    badge.innerHTML = `<img src="${ICON_BASE}/tabler/chart-bar.svg?color=%234285f4" style="width:${size*0.6}px;height:${size*0.6}px">`;
-    badge.title = 'Loguje do BigQuery pipeline_logs';
-    badgeLayer.appendChild(badge);
+// === RENDER: APLIKACJE PEG ===
+function renderApps() {
+  const apps = cortexNodes.filter(n => n.type === 'app');
+  document.getElementById('cnt-apps').textContent = '(' + apps.length + ')';
+  const grid = document.getElementById('apps-grid');
+  grid.innerHTML = '';
+  const liveMap = { 'app_pm': 'PM app', 'app_zakupex': 'ZakupEX', 'app_janusz': 'Janusz API', 'app_muszla': 'Muszla WWW' };
+  apps.forEach(n => {
+    const card = el('div', { class: 'card app', onclick: () => openSidebar(n.id) });
+    const head = el('div', { class: 'card-head' });
+    head.appendChild(el('span', { style: 'font-size:18px' }, t(n.type).icon));
+    head.appendChild(el('span', { class: 'app-name' }, n.label));
+    const statusDot = el('span', { class: 'app-status', id: 'status-' + n.id, style: 'background:var(--dim)' });
+    if (liveStatus && liveMap[n.id] && liveStatus[liveMap[n.id]]) {
+      statusDot.style.background = liveStatus[liveMap[n.id]].ok ? 'var(--ok)' : 'var(--err)';
+      statusDot.title = liveStatus[liveMap[n.id]].ok ? 'LIVE OK' : 'DOWN';
+    }
+    head.appendChild(statusDot);
+    card.appendChild(head);
+    card.appendChild(el('div', { class: 'card-desc' }, n.desc || ''));
+    grid.appendChild(card);
   });
 }
+
+// === RENDER: AUTOMATY (sched + timer + automat) ===
+function renderAutomaty() {
+  const items = cortexNodes
+    .filter(n => n.type === 'sched' || n.type === 'timer' || n.type === 'automat')
+    .sort(sortByCronTime);
+  document.getElementById('cnt-automaty').textContent = '(' + items.length + ')';
+  const grid = document.getElementById('automaty-grid');
+  grid.innerHTML = '';
+  items.forEach(n => {
+    const time = parseCronTime(n.label);
+    const name = n.label.replace(/\s*\([^)]+\)\s*$/, '');
+    const card = el('div', { class: 'card cron', onclick: () => openSidebar(n.id) });
+    card.appendChild(el('div', { class: 'cron-time' }, '⏰ ' + time));
+    card.appendChild(el('div', { class: 'cron-name' }, name));
+    card.appendChild(el('div', { class: 'cron-desc' }, n.desc || ''));
+    grid.appendChild(card);
+  });
+}
+
+// === RENDER: SKRYPTY (z chipami grupującymi) ===
+let scriptFilter = null;
+function renderScripts() {
+  const scripts = cortexNodes.filter(n => n.type === 'script');
+  document.getElementById('cnt-scripts').textContent = '(' + scripts.length + ')';
+  const groups = {};
+  scripts.forEach(n => {
+    const g = scriptGroup(n);
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(n);
+  });
+  const chips = document.getElementById('scripts-chips');
+  chips.innerHTML = '';
+  const allChip = el('div', { class: 'group-chip' + (scriptFilter === null ? ' active' : ''), onclick: () => { scriptFilter = null; renderScripts(); } });
+  allChip.innerHTML = `Wszystkie<span class="chip-count">${scripts.length}</span>`;
+  chips.appendChild(allChip);
+  Object.entries(groups).sort((a, b) => b[1].length - a[1].length).forEach(([g, arr]) => {
+    const chip = el('div', { class: 'group-chip' + (scriptFilter === g ? ' active' : ''), onclick: () => { scriptFilter = (scriptFilter === g ? null : g); renderScripts(); } });
+    chip.innerHTML = `${g}<span class="chip-count">${arr.length}</span>`;
+    chips.appendChild(chip);
+  });
+
+  const grid = document.getElementById('scripts-grid');
+  grid.innerHTML = '';
+  const filtered = scriptFilter ? scripts.filter(n => scriptGroup(n) === scriptFilter) : scripts;
+  filtered.forEach(n => {
+    const tile = el('div', { class: 'tile', onclick: () => openSidebar(n.id) });
+    tile.appendChild(el('span', { class: 'tile-icon' }, '🐍'));
+    tile.appendChild(el('span', { class: 'tile-name', title: n.desc || '' }, n.label));
+    tile.appendChild(el('span', { class: 'tile-tag' }, scriptGroup(n)));
+    grid.appendChild(tile);
+  });
+}
+
+// === RENDER: INTEGRACJE (api + mcp) ===
+function renderIntegrations() {
+  const items = cortexNodes.filter(n => n.type === 'api' || n.type === 'mcp');
+  document.getElementById('cnt-integrations').textContent = '(' + items.length + ')';
+  const grid = document.getElementById('integrations-grid');
+  grid.innerHTML = '';
+  items.sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'api' ? -1 : 1;
+    return a.label.localeCompare(b.label);
+  }).forEach(n => {
+    const tile = el('div', { class: 'tile', onclick: () => openSidebar(n.id) });
+    tile.appendChild(el('span', { class: 'tile-icon' }, t(n.type).icon));
+    tile.appendChild(el('span', { class: 'tile-name', title: n.desc || '' }, n.label));
+    tile.appendChild(el('span', { class: 'tile-tag' }, t(n.type).label));
+    grid.appendChild(tile);
+  });
+}
+
+// === RENDER: STORAGE (bucket + db-ish) ===
+function renderStorage() {
+  const items = cortexNodes.filter(n => n.type === 'bucket' || n.id === 'mikrus_pg' || n.id === 'supabase' || n.id === 'gcp_bq');
+  document.getElementById('cnt-storage').textContent = '(' + items.length + ')';
+  const grid = document.getElementById('storage-grid');
+  grid.innerHTML = '';
+  items.forEach(n => {
+    const tile = el('div', { class: 'tile', onclick: () => openSidebar(n.id) });
+    tile.appendChild(el('span', { class: 'tile-icon' }, '🗄️'));
+    tile.appendChild(el('span', { class: 'tile-name', title: n.desc || '' }, n.label));
+    grid.appendChild(tile);
+  });
+}
+
+// === RENDER: HOSTING ===
+function renderHosting() {
+  const items = cortexNodes.filter(n => n.type === 'hosting' || (n.type === 'gcp' && n.id === 'gcp'));
+  document.getElementById('cnt-hosting').textContent = '(' + items.length + ')';
+  const grid = document.getElementById('hosting-grid');
+  grid.innerHTML = '';
+  items.forEach(n => {
+    const tile = el('div', { class: 'tile', onclick: () => openSidebar(n.id) });
+    tile.appendChild(el('span', { class: 'tile-icon' }, t(n.type).icon || '🖥️'));
+    tile.appendChild(el('span', { class: 'tile-name', title: n.desc || '' }, n.label));
+    grid.appendChild(tile);
+  });
+}
+
+// === RENDER: CORE FILES ===
+function renderCore() {
+  const items = cortexNodes.filter(n => n.type === 'core');
+  document.getElementById('cnt-core').textContent = '(' + items.length + ')';
+  const grid = document.getElementById('core-grid');
+  grid.innerHTML = '';
+  items.forEach(n => {
+    const tile = el('div', { class: 'tile', onclick: () => openSidebar(n.id) });
+    tile.appendChild(el('span', { class: 'tile-icon' }, '📄'));
+    tile.appendChild(el('span', { class: 'tile-name', title: n.desc || '' }, n.label));
+    grid.appendChild(tile);
+  });
+}
+
+// === RENDER: CLOUD RUN ===
+function renderCloudRun() {
+  const items = cortexNodes.filter(n => n.type === 'gcp' && n.id !== 'gcp');
+  document.getElementById('cnt-cloudrun').textContent = '(' + items.length + ')';
+  const grid = document.getElementById('cloudrun-grid');
+  grid.innerHTML = '';
+  items.forEach(n => {
+    const tile = el('div', { class: 'tile', onclick: () => openSidebar(n.id) });
+    tile.appendChild(el('span', { class: 'tile-icon' }, '⚡'));
+    tile.appendChild(el('span', { class: 'tile-name', title: n.desc || '' }, n.label));
+    grid.appendChild(tile);
+  });
+}
+
+// === RENDER: REPOS ===
+function renderRepos() {
+  const items = cortexNodes.filter(n => n.type === 'repo');
+  document.getElementById('cnt-repos').textContent = '(' + items.length + ')';
+  const grid = document.getElementById('repos-grid');
+  grid.innerHTML = '';
+  items.forEach(n => {
+    const tile = el('div', { class: 'tile', onclick: () => openSidebar(n.id) });
+    tile.appendChild(el('span', { class: 'tile-icon' }, '📦'));
+    tile.appendChild(el('span', { class: 'tile-name', title: n.desc || '' }, n.label));
+    grid.appendChild(tile);
+  });
+}
+
+// === SIDEBAR ===
+function openSidebar(nodeId) {
+  const node = byId.get(nodeId);
+  if (!node) return;
+  const body = document.getElementById('sb-body');
+  body.innerHTML = '';
+  body.appendChild(el('h3', {}, t(node.type).icon + ' ' + node.label));
+  body.appendChild(el('span', { class: 'sb-type' }, t(node.type).label));
+  body.appendChild(el('div', { class: 'sb-desc' }, node.desc || '(brak opisu)'));
+
+  // Live status dla aplikacji
+  const liveMap = { 'app_pm': 'PM app', 'app_zakupex': 'ZakupEX', 'app_janusz': 'Janusz API', 'app_muszla': 'Muszla WWW' };
+  if (liveStatus && liveMap[nodeId] && liveStatus[liveMap[nodeId]]) {
+    const st = liveStatus[liveMap[nodeId]];
+    const section = el('div', { class: 'sb-section' });
+    section.appendChild(el('div', { class: 'sb-section-title' }, 'Live status'));
+    const dot = el('span', { class: 'h-dot ' + (st.ok ? 'ok' : 'err') });
+    const line = el('div', { class: 'sb-item' });
+    line.appendChild(dot);
+    line.appendChild(el('span', {}, st.ok ? 'OK' : 'DOWN'));
+    line.appendChild(el('span', { class: 'sb-meta' }, 'HTTP ' + (st.code || '?')));
+    section.appendChild(line);
+    section.appendChild(el('div', { class: 'sb-item', style: 'color:var(--muted);font-size:11.5px' }, 'sprawdzono: ' + new Date(st.checked_at).toLocaleString('pl-PL')));
+    body.appendChild(section);
+  }
+
+  // Wychodzi do
+  const out = adjOut.get(nodeId) || [];
+  if (out.length > 0) {
+    const section = el('div', { class: 'sb-section' });
+    section.appendChild(el('div', { class: 'sb-section-title' }, '→ Wywołuje / używa (' + out.length + ')'));
+    out.forEach(e => {
+      const target = byId.get(e.to);
+      if (!target) return;
+      const item = el('div', { class: 'sb-item', onclick: () => openSidebar(target.id) });
+      item.appendChild(el('span', { class: 'sb-icon' }, t(target.type).icon));
+      item.appendChild(el('span', {}, target.label));
+      if (e.label) item.appendChild(el('span', { class: 'sb-meta' }, e.label));
+      section.appendChild(item);
+    });
+    body.appendChild(section);
+  }
+
+  // Wchodzi z
+  const inc = adjIn.get(nodeId) || [];
+  if (inc.length > 0) {
+    const section = el('div', { class: 'sb-section' });
+    section.appendChild(el('div', { class: 'sb-section-title' }, '← Wywoływany przez (' + inc.length + ')'));
+    inc.forEach(e => {
+      const source = byId.get(e.from);
+      if (!source) return;
+      const item = el('div', { class: 'sb-item', onclick: () => openSidebar(source.id) });
+      item.appendChild(el('span', { class: 'sb-icon' }, t(source.type).icon));
+      item.appendChild(el('span', {}, source.label));
+      if (e.label) item.appendChild(el('span', { class: 'sb-meta' }, e.label));
+      section.appendChild(item);
+    });
+    body.appendChild(section);
+  }
+
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sb-backdrop').classList.add('open');
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sb-backdrop').classList.remove('open');
+}
+document.getElementById('sb-close').onclick = closeSidebar;
+document.getElementById('sb-backdrop').onclick = closeSidebar;
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+
+// === SEARCH ===
+const searchInput = document.getElementById('search');
+const searchResultsBox = document.getElementById('search-results');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  if (q.length < 2) { searchResultsBox.style.display = 'none'; return; }
+  const hits = cortexNodes
+    .filter(n => n.label.toLowerCase().includes(q) || (n.desc || '').toLowerCase().includes(q) || n.id.toLowerCase().includes(q))
+    .slice(0, 12);
+  searchResultsBox.innerHTML = '';
+  if (hits.length === 0) {
+    searchResultsBox.innerHTML = '<div class="search-result" style="color:var(--muted)">brak wyników</div>';
+  } else {
+    hits.forEach(n => {
+      const r = el('div', { class: 'search-result', onclick: () => { openSidebar(n.id); searchResultsBox.style.display = 'none'; searchInput.value = ''; } });
+      r.appendChild(el('span', {}, t(n.type).icon));
+      r.appendChild(el('span', {}, n.label));
+      r.appendChild(el('span', { class: 'sr-type' }, t(n.type).label));
+      searchResultsBox.appendChild(r);
+    });
+  }
+  searchResultsBox.style.display = 'block';
+});
+searchInput.addEventListener('focus', () => {
+  if (searchInput.value.trim().length >= 2) searchResultsBox.style.display = 'block';
+});
+searchInput.addEventListener('blur', () => {
+  setTimeout(() => searchResultsBox.style.display = 'none', 200);
+});
+
+// === BOTTOM STRIP ===
+document.getElementById('bs-total').textContent = cortexNodes.length;
+document.getElementById('bs-updated').textContent = (typeof PNG_UPDATED !== 'undefined' && PNG_UPDATED) ? PNG_UPDATED : new Date().toISOString().slice(0, 16).replace('T', ' ');
+// koszt — szukamy w nodzie 'gcp' lub statycznie z desc
+const gcpNode = byId.get('gcp');
+const knownCost = '~653 zł/mc'; // wartość z welcome screen (jeśli chcesz live — można w data.js)
+document.getElementById('bs-cost').innerHTML = '💰 koszt znany: <strong>' + knownCost + '</strong>';
+
+// === INIT ===
+renderApps();
+renderAutomaty();
+renderScripts();
+renderIntegrations();
+renderStorage();
+renderHosting();
+renderCore();
+renderCloudRun();
+renderRepos();
+fetchLiveStatus();
+setInterval(fetchLiveStatus, 60000);
+
+// Deep link: ?node=app_pm
+const urlParams = new URLSearchParams(location.search);
+const nodeParam = urlParams.get('node');
+if (nodeParam && byId.has(nodeParam)) openSidebar(nodeParam);
 </script>
 </body>
 </html>
