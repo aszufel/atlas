@@ -308,7 +308,7 @@ section { margin-top: 28px; }
 </aside>
 
 <div class="bottom-strip">
-  <span><strong id="bs-total">…</strong> obiektów w Cortex · <a href="#" id="bs-logs" target="_blank" rel="noopener" style="color:var(--accent)">📊 logi 24h</a></span>
+  <span><strong id="bs-total">…</strong> obiektów w Cortex · <a href="#" id="bs-logs" target="_blank" rel="noopener" style="color:var(--accent)" title="Otwiera tabelę pipeline_logs">📊 BQ pipeline_logs</a> · <span id="bs-logs-copy" style="color:var(--accent);cursor:pointer" title="Skopiuj query SELECT 24h">📋 query</span></span>
   <span id="bs-cost">…</span>
   <span class="mono">updated: <span id="bs-updated">…</span></span>
 </div>
@@ -381,19 +381,37 @@ function bqAppName(nodeId) {
   const m = nodeId.match(/^(app_|www_|cr_)(.+)$/);
   return m ? m[2].replace(/_/g, '-') : null;
 }
+const BQ_PROJECT = 'ai-council-487609';
+const BQ_DATASET = 'cortex_logs';
+const BQ_TABLE = 'pipeline_logs';
+
 function bqLogsUrl(nodeId) {
-  // Otwiera BigQuery Console z prefilled query
-  const project = 'ai-council-487609';
+  // Otwiera BigQuery Console na tabelę pipeline_logs.
+  // (sq=/q= w nowym BQ Console nie działają jak prefilled SQL — sq to Saved Query ID.
+  //  Otwarcie tabeli + "Zapytanie" w UI daje SELECT * FROM table — Adi wkleja query ze schowka.)
+  return `https://console.cloud.google.com/bigquery?project=${BQ_PROJECT}&p=${BQ_PROJECT}&d=${BQ_DATASET}&t=${BQ_TABLE}&page=table`;
+}
+
+function bqLogsQuery(nodeId) {
   const app = nodeId ? bqAppName(nodeId) : null;
   const where = app
     ? `WHERE app = '${app}' AND created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)`
     : `WHERE created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)`;
-  const query = `SELECT created_at, app, level, source, event, message, run_id
-FROM \`${project}.cortex_logs.pipeline_logs\`
+  return `SELECT created_at, app, level, source, event, message, run_id
+FROM \`${BQ_PROJECT}.${BQ_DATASET}.${BQ_TABLE}\`
 ${where}
 ORDER BY created_at DESC
 LIMIT 200`;
-  return `https://console.cloud.google.com/bigquery?project=${project}&sq=${project}:${encodeURIComponent(query)}`;
+}
+
+function copyToClipboard(text, statusEl) {
+  navigator.clipboard.writeText(text).then(() => {
+    if (statusEl) {
+      const orig = statusEl.textContent;
+      statusEl.textContent = '✅ skopiowane!';
+      setTimeout(() => { statusEl.textContent = orig; }, 1500);
+    }
+  }).catch(err => console.warn('clipboard fail:', err));
 }
 
 // === HELPERS ===
@@ -722,6 +740,8 @@ function openSidebar(nodeId) {
   if (BQ_LOGGING_NODES.has(nodeId)) {
     const section = el('div', { class: 'sb-section' });
     section.appendChild(el('div', { class: 'sb-section-title' }, 'Logi'));
+
+    // 1. Link otwierający tabelę
     const a = document.createElement('a');
     a.href = bqLogsUrl(nodeId);
     a.target = '_blank';
@@ -729,8 +749,19 @@ function openSidebar(nodeId) {
     a.className = 'sb-item';
     a.style.color = 'var(--accent)';
     a.style.textDecoration = 'none';
-    a.innerHTML = '📊 <span>Logi 24h w BigQuery →</span><span class="sb-meta">app=' + bqAppName(nodeId) + '</span>';
+    a.innerHTML = '📊 <span>Otwórz tabelę w BigQuery →</span>';
     section.appendChild(a);
+
+    // 2. Button "Kopiuj query"
+    const btnWrap = el('div', { class: 'sb-item', style: 'cursor:pointer' });
+    btnWrap.innerHTML = '📋 <span>Skopiuj query</span><span class="sb-meta">app=' + bqAppName(nodeId) + ' · 24h</span>';
+    btnWrap.addEventListener('click', () => copyToClipboard(bqLogsQuery(nodeId), btnWrap.querySelector('span')));
+    section.appendChild(btnWrap);
+
+    // Hint
+    section.appendChild(el('div', { style: 'font-size:11px;color:var(--muted);margin-top:4px;padding:0 8px' },
+      'Tip: otwórz tabelę → "Zapytanie" → wklej (Cmd/Ctrl+V)'));
+
     body.appendChild(section);
   }
 
@@ -857,6 +888,7 @@ document.getElementById('bs-updated').textContent = '…';
 const knownCost = '~653 zł/mc';
 document.getElementById('bs-cost').innerHTML = '💰 koszt znany: <strong>' + knownCost + '</strong>';
 document.getElementById('bs-logs').href = bqLogsUrl(null);
+document.getElementById('bs-logs-copy').addEventListener('click', () => copyToClipboard(bqLogsQuery(null), document.getElementById('bs-logs-copy')));
 
 // === INIT ===
 renderApps();
