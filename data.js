@@ -32,9 +32,9 @@ const nodeToLayer = {
   knowledge_dir: 'L_LAPTOP', venv: 'L_LAPTOP',
   notion_map: 'L_LAPTOP', ecosystem_map: 'L_LAPTOP', apps_map: 'L_LAPTOP',
   quotes_mazur: 'L_LAPTOP', adi_psychology: 'L_LAPTOP',
-  app_atlas: 'L_LAPTOP',
+  www_atlas: 'L_LAPTOP',
   // Vercel
-  vercel: 'L_VERCEL', app_pm: 'L_VERCEL', app_muszla: 'L_VERCEL',
+  vercel: 'L_VERCEL', app_pm: 'L_VERCEL', www_muszla: 'L_VERCEL',
   // Zakupex — Cloud Run europe-west1 (migrowane z Vercel 2026-04-13)
   app_zakupex: 'L_GCP',
   // Nowe Cloud Run (2026-04-17+)
@@ -122,13 +122,19 @@ const nodes = [
   { id: 'mcp_gmail',       label: 'Gmail MCP',             type: 'mcp', v: ['cortex'], desc: 'Gmail z Claude.ai' },
   { id: 'mcp_calendar',    label: 'Calendar MCP',          type: 'mcp', v: ['cortex'], desc: 'kalendarz z Claude.ai' },
 
-  // Apps
+  // Apps (z backendem, bazą, własną logiką)
   { id: 'app_pm',          label: 'PM',                    type: 'app', v: ['cortex'], desc: 'Pricing Manager — Next.js 16, Supabase, Apify — price.partnerexpert.work' },
   { id: 'app_zakupex',     label: 'ZakupEX',               type: 'app', v: ['cortex'], desc: 'System faktur — Next.js 16, Supabase, OCR GPT-4o. Cloud Run europe-west1, domena zakupex.partnerexpert.work (migrowane z Vercel 2026-04-13).' },
   { id: 'app_janusz',      label: 'Janusz',                type: 'app', v: ['cortex'], desc: 'PERSONA: WhatsApp bot zespołu PEG + PM obowiązki — Node.js, Baileys, GPT-4o-mini — Mikrus (🟢 live)' },
   { id: 'app_gustaw',      label: 'Gustaw',                type: 'app', v: ['cortex'], desc: 'PERSONA: WhatsApp asystent Adiego — Node.js, Baileys, GPT-4o + Gemini — Mikrus (🔴 czeka na SIM)' },
-  { id: 'app_atlas',       label: 'Atlas',                 type: 'app', v: ['cortex'], desc: 'Interaktywna mapa ekosystemu PEG (Cytoscape.js)' },
-  { id: 'app_muszla',      label: 'muszla.pl',             type: 'app', v: ['cortex'], desc: 'muszlakolobrzeg.pl — Astro 5, React 19, Tailwind 4, Vercel' },
+
+  // Strony WWW (statyczne / SSG / SPA bez własnego backendu)
+  { id: 'www_indu',        label: 'IND.U',                 type: 'www', v: ['cortex'], desc: 'induapartamenty.pl — strona apartamentów IND.U, dhosting FTP, Meta Pixel 464727134708292' },
+  { id: 'www_sunday',      label: 'Sunday',                type: 'www', v: ['cortex'], desc: 'sundayapartamenty.pl — strona apartamentów Sunday, dhosting FTP' },
+  { id: 'www_peg',         label: 'PEG WWW',               type: 'www', v: ['cortex'], desc: 'partnerexpert.pl — strona korporacyjna PEG, dhosting FTP' },
+  { id: 'www_muszla',      label: 'muszla.pl',             type: 'www', v: ['cortex'], desc: 'muszlakolobrzeg.pl — strona Muszli Kołobrzeg, Astro 5, React 19, Tailwind 4, Vercel' },
+  { id: 'www_atlas',       label: 'Atlas',                 type: 'www', v: ['cortex'], desc: 'Atlas Cortexu — dashboard mapowy ekosystemu PEG, GitHub Pages (aszufel.github.io/atlas)' },
+  { id: 'www_extranet',    label: 'Extranet PEG',          type: 'www', v: ['cortex'], desc: 'extranet.partnerexpert.work — wewnętrzny portal PEG, Next.js 16, Cloud Run europe-west1' },
 
   // Nowe skrypty (2026-04-11)
   { id: 'gbp_py',             label: 'gbp.py',               type: 'script', v: ['cortex'], desc: 'Google Business Profile — list, open, close, hours, reviews, reply. Aliasy: muszla, indu, sunday...' },
@@ -326,12 +332,19 @@ const edges = [
   { source: 'repo_pm',       target: 'app_pm',       label: 'builds', v: ['cortex'] },
   { source: 'repo_zakupex',  target: 'app_zakupex',  label: 'builds', v: ['cortex'] },
   { source: 'repo_janusz',   target: 'app_janusz',   label: 'builds', v: ['cortex'] },
-  { source: 'repo_muszla',   target: 'app_muszla',   label: 'builds', v: ['cortex'] },
-  { source: 'repo_atlas',    target: 'app_atlas',    label: 'builds', v: ['cortex'] },
+  { source: 'repo_muszla',   target: 'www_muszla',   label: 'builds', v: ['cortex'] },
+  { source: 'repo_atlas',    target: 'www_atlas',    label: 'builds', v: ['cortex'] },
   { source: 'app_pm',      target: 'vercel',  label: 'deploy', v: ['cortex'] },
   { source: 'app_zakupex', target: 'gcp',     label: 'deploy (europe-west1)', v: ['cortex'] },
-  { source: 'app_muszla',  target: 'vercel',  label: 'deploy', v: ['cortex'] },
-  { source: 'app_atlas',   target: 'cr_atlas_status', label: 'status API', v: ['cortex'] },
+  { source: 'www_muszla',  target: 'vercel',  label: 'deploy', v: ['cortex'] },
+  { source: 'www_atlas',   target: 'cr_atlas_status', label: 'status API', v: ['cortex'] },
+  { source: 'deploy_ftp_sh', target: 'www_indu',   label: 'deploy', v: ['cortex'] },
+  { source: 'deploy_ftp_sh', target: 'www_sunday', label: 'deploy', v: ['cortex'] },
+  { source: 'deploy_ftp_sh', target: 'www_peg',    label: 'deploy', v: ['cortex'] },
+  { source: 'www_indu',    target: 'dhosting', label: 'hosted', v: ['cortex'] },
+  { source: 'www_sunday',  target: 'dhosting', label: 'hosted', v: ['cortex'] },
+  { source: 'www_peg',     target: 'dhosting', label: 'hosted', v: ['cortex'] },
+  { source: 'www_extranet', target: 'gcp', label: 'Cloud Run (europe-west1)', v: ['cortex'] },
   { source: 'update_context_py', target: 'infra_snapshot_py', label: 'triggers', v: ['cortex'] },
   { source: 'infra_snapshot_py', target: 'infra_live_md', label: 'generates', v: ['cortex'] },
   { source: 'infra_live_md', target: 'context_md', label: 'included', v: ['cortex'] },
@@ -566,14 +579,14 @@ const nodeMeta = {
     why: 'Drugi filar persona — Janusz dla zespołu, Gustaw dla Adi.',
     status: '🔴 off (czeka na SIM)',
   },
-  app_muszla: {
+  www_muszla: {
     what: 'muszlakolobrzeg.pl — strona Muszli Koncertowej.',
     does: ['Event listing', 'Rezerwacje', 'Afisz sezonowy'],
     why: 'Bookingi + marketing Muszli. Jedyna strona PEG która dostaje budżet Ads.',
     status: '🟢 live',
     url: 'https://muszlakolobrzeg.pl',
   },
-  app_atlas: {
+  www_atlas: {
     what: 'Interaktywna mapa ekosystemu PEG.',
     does: ['3 widoki: Cortex / Biznesy / Zespół', 'Search, filtry, focus mode', 'Live status (w planach)'],
     why: 'Jednorazowe spojrzenie na całą infrastrukturę — co działa, co zjadacz kosztów.',

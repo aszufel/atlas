@@ -61,6 +61,8 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monosp
   display: inline-flex; align-items: center; gap: 6px;
   padding: 4px 10px; background: var(--bg); border-radius: 999px; font-size: 12px;
 }
+.h-pill-click { cursor: pointer; transition: background .15s; }
+.h-pill-click:hover { background: var(--panel-2); outline: 1px solid var(--accent); }
 .h-dot { width: 8px; height: 8px; border-radius: 50%; }
 .h-dot.ok { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
 .h-dot.warn { background: var(--warn); }
@@ -211,9 +213,18 @@ section { margin-top: 28px; }
     <div class="sec-head">
       <h2>🚀 Aplikacje PEG</h2>
       <span class="sec-count" id="cnt-apps"></span>
-      <span class="sec-desc">działające produkty • klik = szczegóły</span>
+      <span class="sec-desc">backend + baza • klik = szczegóły</span>
     </div>
     <div class="grid apps" id="apps-grid"></div>
+  </section>
+
+  <section id="sec-www">
+    <div class="sec-head">
+      <h2>🌐 Strony WWW</h2>
+      <span class="sec-count" id="cnt-www"></span>
+      <span class="sec-desc">statyczne / SSG • klik = szczegóły</span>
+    </div>
+    <div class="grid apps" id="www-grid"></div>
   </section>
 
   <section id="sec-automaty">
@@ -297,12 +308,15 @@ section { margin-top: 28px; }
 </aside>
 
 <div class="bottom-strip">
-  <span><strong id="bs-total">…</strong> obiektów w Cortex · <a href="old.html" style="color:var(--accent)">stary widok</a></span>
+  <span><strong id="bs-total">…</strong> obiektów w Cortex</span>
   <span id="bs-cost">…</span>
   <span class="mono">updated: <span id="bs-updated">…</span></span>
 </div>
 
-<script src="data.js"></script>
+<script>
+  // Cache bust data.js przy każdym page load (GitHub Pages ma agresywne caching)
+  document.write('<script src="data.js?v=' + Date.now() + '"><\/script>');
+</script>
 <script>
 // === DATA INDEX ===
 // data.js dostarcza: nodes, edges, layers, nodeMeta (opt)
@@ -322,6 +336,7 @@ edgesSafe.forEach(e => {
 // === TYPE METADATA ===
 const TYPE = {
   app:    { icon: '🚀', label: 'Aplikacja',  color: '#f778ba' },
+  www:    { icon: '🌐', label: 'Strona WWW', color: '#56d364' },
   sched:  { icon: '⏰', label: 'Scheduler',  color: '#4285f4' },
   timer:  { icon: '⏰', label: 'Timer',      color: '#d29922' },
   cron:   { icon: '⏰', label: 'Cron PHP',   color: '#db6d28' },
@@ -396,6 +411,19 @@ function scriptGroup(node) {
 
 // === RENDER: HEALTH BANNER (live z atlas-status endpoint) ===
 const LIVE_STATUS_URL = 'https://europe-central2-ai-council-487609.cloudfunctions.net/atlas-status';
+// Mapowanie: nazwa endpointu w atlas-status → ID node'a w data.js
+const LIVE_MAP = {
+  'PM app':         'app_pm',
+  'ZakupEX':        'app_zakupex',
+  'Janusz API':     'app_janusz',
+  'Janusz WA (BQ)': 'app_janusz',
+  'IND.U WWW':      'www_indu',
+  'Sunday WWW':     'www_sunday',
+  'PEG WWW':        'www_peg',
+  'Muszla WWW':     'www_muszla',
+  'Atlas':          'www_atlas',
+  'Extranet PEG':   'www_extranet',
+};
 let liveStatus = null;
 
 async function fetchLiveStatus() {
@@ -412,6 +440,18 @@ async function fetchLiveStatus() {
   }
 }
 
+function jumpToNode(nodeId) {
+  if (!byId.has(nodeId)) return;
+  // znajdź kafelek po id (kafelki nie mają id w DOM — używamy data-node atrybutu)
+  const card = document.querySelector('[data-node="' + nodeId + '"]');
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.style.outline = '2px solid var(--accent)';
+    setTimeout(() => { card.style.outline = ''; }, 1500);
+  }
+  openSidebar(nodeId);
+}
+
 function renderHealthBanner() {
   const pills = document.getElementById('health-pills');
   const time = document.getElementById('health-time');
@@ -422,7 +462,13 @@ function renderHealthBanner() {
     const ok = st.ok === true;
     if (ok) okN++; else errN++;
     if (st.checked_at && !ts) ts = st.checked_at;
-    const pill = el('span', { class: 'h-pill', title: `${name}: ${ok ? 'OK' : 'DOWN'} (HTTP ${st.code || '?'})` });
+    const nodeId = LIVE_MAP[name];
+    const clickable = !!nodeId;
+    const pill = el('span', {
+      class: 'h-pill' + (clickable ? ' h-pill-click' : ''),
+      title: `${name}: ${ok ? 'OK' : 'DOWN'} (HTTP ${st.code || '?'})` + (clickable ? ' · klik = pokaż' : ''),
+    });
+    if (clickable) pill.addEventListener('click', () => jumpToNode(nodeId));
     pill.appendChild(el('span', { class: 'h-dot ' + (ok ? 'ok' : 'err') }));
     pill.appendChild(document.createTextNode(name));
     pills.appendChild(pill);
@@ -437,28 +483,46 @@ function renderHealthBanner() {
   }
 }
 
+// reverse LIVE_MAP: nodeId → endpoint name (do statusu w karcie)
+const NODE_TO_LIVE = {};
+Object.entries(LIVE_MAP).forEach(([endpoint, nodeId]) => {
+  // jeśli wiele endpointów wskazuje ten sam node — zostawiamy pierwszy znaleziony
+  if (nodeId && !NODE_TO_LIVE[nodeId]) NODE_TO_LIVE[nodeId] = endpoint;
+});
+
+function renderCardWithStatus(n) {
+  const card = el('div', { class: 'card app', dataset: { node: n.id }, onclick: () => openSidebar(n.id) });
+  const head = el('div', { class: 'card-head' });
+  head.appendChild(el('span', { style: 'font-size:18px' }, t(n.type).icon));
+  head.appendChild(el('span', { class: 'app-name' }, n.label));
+  const statusDot = el('span', { class: 'app-status', style: 'background:var(--dim)' });
+  const endpoint = NODE_TO_LIVE[n.id];
+  if (liveStatus && endpoint && liveStatus[endpoint]) {
+    statusDot.style.background = liveStatus[endpoint].ok ? 'var(--ok)' : 'var(--err)';
+    statusDot.title = liveStatus[endpoint].ok ? 'LIVE OK · ' + endpoint : 'DOWN · ' + endpoint;
+  }
+  head.appendChild(statusDot);
+  card.appendChild(head);
+  card.appendChild(el('div', { class: 'card-desc' }, n.desc || ''));
+  return card;
+}
+
 // === RENDER: APLIKACJE PEG ===
 function renderApps() {
   const apps = cortexNodes.filter(n => n.type === 'app');
   document.getElementById('cnt-apps').textContent = '(' + apps.length + ')';
   const grid = document.getElementById('apps-grid');
   grid.innerHTML = '';
-  const liveMap = { 'app_pm': 'PM app', 'app_zakupex': 'ZakupEX', 'app_janusz': 'Janusz API', 'app_muszla': 'Muszla WWW' };
-  apps.forEach(n => {
-    const card = el('div', { class: 'card app', onclick: () => openSidebar(n.id) });
-    const head = el('div', { class: 'card-head' });
-    head.appendChild(el('span', { style: 'font-size:18px' }, t(n.type).icon));
-    head.appendChild(el('span', { class: 'app-name' }, n.label));
-    const statusDot = el('span', { class: 'app-status', id: 'status-' + n.id, style: 'background:var(--dim)' });
-    if (liveStatus && liveMap[n.id] && liveStatus[liveMap[n.id]]) {
-      statusDot.style.background = liveStatus[liveMap[n.id]].ok ? 'var(--ok)' : 'var(--err)';
-      statusDot.title = liveStatus[liveMap[n.id]].ok ? 'LIVE OK' : 'DOWN';
-    }
-    head.appendChild(statusDot);
-    card.appendChild(head);
-    card.appendChild(el('div', { class: 'card-desc' }, n.desc || ''));
-    grid.appendChild(card);
-  });
+  apps.forEach(n => grid.appendChild(renderCardWithStatus(n)));
+}
+
+// === RENDER: STRONY WWW ===
+function renderWWW() {
+  const items = cortexNodes.filter(n => n.type === 'www');
+  document.getElementById('cnt-www').textContent = '(' + items.length + ')';
+  const grid = document.getElementById('www-grid');
+  grid.innerHTML = '';
+  items.forEach(n => grid.appendChild(renderCardWithStatus(n)));
 }
 
 // === RENDER: AUTOMATY (sched + timer + automat) ===
@@ -612,10 +676,10 @@ function openSidebar(nodeId) {
   body.appendChild(el('span', { class: 'sb-type' }, t(node.type).label));
   body.appendChild(el('div', { class: 'sb-desc' }, node.desc || '(brak opisu)'));
 
-  // Live status dla aplikacji
-  const liveMap = { 'app_pm': 'PM app', 'app_zakupex': 'ZakupEX', 'app_janusz': 'Janusz API', 'app_muszla': 'Muszla WWW' };
-  if (liveStatus && liveMap[nodeId] && liveStatus[liveMap[nodeId]]) {
-    const st = liveStatus[liveMap[nodeId]];
+  // Live status dla aplikacji/WWW
+  const endpoint = NODE_TO_LIVE[nodeId];
+  if (liveStatus && endpoint && liveStatus[endpoint]) {
+    const st = liveStatus[endpoint];
     const section = el('div', { class: 'sb-section' });
     section.appendChild(el('div', { class: 'sb-section-title' }, 'Live status'));
     const dot = el('span', { class: 'h-dot ' + (st.ok ? 'ok' : 'err') });
@@ -664,11 +728,22 @@ function openSidebar(nodeId) {
 
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('sb-backdrop').classList.add('open');
+  // Deep link: zapisz current node w URL (history pushState, bez reload)
+  try {
+    const url = new URL(location.href);
+    url.searchParams.set('node', nodeId);
+    history.replaceState({ node: nodeId }, '', url);
+  } catch {}
 }
 
 function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sb-backdrop').classList.remove('open');
+  try {
+    const url = new URL(location.href);
+    url.searchParams.delete('node');
+    history.replaceState({}, '', url);
+  } catch {}
 }
 document.getElementById('sb-close').onclick = closeSidebar;
 document.getElementById('sb-backdrop').onclick = closeSidebar;
@@ -706,14 +781,27 @@ searchInput.addEventListener('blur', () => {
 
 // === BOTTOM STRIP ===
 document.getElementById('bs-total').textContent = cortexNodes.length;
-document.getElementById('bs-updated').textContent = (typeof PNG_UPDATED !== 'undefined' && PNG_UPDATED) ? PNG_UPDATED : new Date().toISOString().slice(0, 16).replace('T', ' ');
-// koszt — szukamy w nodzie 'gcp' lub statycznie z desc
-const gcpNode = byId.get('gcp');
-const knownCost = '~653 zł/mc'; // wartość z welcome screen (jeśli chcesz live — można w data.js)
+// updated: data ostatniego commita repo (real source of truth, fallback = teraz)
+document.getElementById('bs-updated').textContent = '…';
+(async () => {
+  try {
+    const res = await fetch('https://api.github.com/repos/aszufel/atlas/commits?per_page=1');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const commits = await res.json();
+    const iso = commits?.[0]?.commit?.author?.date;
+    if (!iso) throw new Error('no date');
+    const d = new Date(iso);
+    document.getElementById('bs-updated').textContent = d.toISOString().slice(0, 10) + ' ' + d.toISOString().slice(11, 16) + ' UTC';
+  } catch (e) {
+    document.getElementById('bs-updated').textContent = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  }
+})();
+const knownCost = '~653 zł/mc';
 document.getElementById('bs-cost').innerHTML = '💰 koszt znany: <strong>' + knownCost + '</strong>';
 
 // === INIT ===
 renderApps();
+renderWWW();
 renderAutomaty();
 renderScripts();
 renderIntegrations();
