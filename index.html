@@ -384,12 +384,15 @@ function bqAppName(nodeId) {
 const BQ_PROJECT = 'ai-council-487609';
 const BQ_DATASET = 'cortex_logs';
 const BQ_TABLE = 'pipeline_logs';
+const BQ_AUTHUSER = 'szufel@partnerexpert.pl'; // konto firmowe Owner — pojedyncze konto z dostępem do BQ
 
 function bqLogsUrl(nodeId) {
   // Otwiera BigQuery Console na tabelę pipeline_logs.
+  // authuser= wymusza konkretne konto Google (jeśli Chrome jest zalogowany na kilka kont, np. firmowe + prywatne).
+  // Owner projektu (szufel@partnerexpert.pl) ma dostęp; aszufel@gmail.com — nie.
   // (sq=/q= w nowym BQ Console nie działają jak prefilled SQL — sq to Saved Query ID.
   //  Otwarcie tabeli + "Zapytanie" w UI daje SELECT * FROM table — Adi wkleja query ze schowka.)
-  return `https://console.cloud.google.com/bigquery?project=${BQ_PROJECT}&p=${BQ_PROJECT}&d=${BQ_DATASET}&t=${BQ_TABLE}&page=table`;
+  return `https://console.cloud.google.com/bigquery?authuser=${encodeURIComponent(BQ_AUTHUSER)}&project=${BQ_PROJECT}&p=${BQ_PROJECT}&d=${BQ_DATASET}&t=${BQ_TABLE}&page=table`;
 }
 
 function bqLogsQuery(nodeId) {
@@ -759,8 +762,8 @@ function openSidebar(nodeId) {
     section.appendChild(btnWrap);
 
     // Hint
-    section.appendChild(el('div', { style: 'font-size:11px;color:var(--muted);margin-top:4px;padding:0 8px' },
-      'Tip: otwórz tabelę → "Zapytanie" → wklej (Cmd/Ctrl+V)'));
+    section.appendChild(el('div', { style: 'font-size:11px;color:var(--muted);margin-top:4px;padding:0 8px;line-height:1.4' },
+      'Tip: otwórz tabelę → "Zapytanie" w toolbarze → wklej (Cmd/Ctrl+V). Jeśli Access Denied — sprawdź czy Chrome użył konta firmowego (link forsuje authuser=szufel@partnerexpert.pl).'));
 
     body.appendChild(section);
   }
