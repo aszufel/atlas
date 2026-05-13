@@ -308,7 +308,7 @@ section { margin-top: 28px; }
 </aside>
 
 <div class="bottom-strip">
-  <span><strong id="bs-total">…</strong> obiektów w Cortex</span>
+  <span><strong id="bs-total">…</strong> obiektów w Cortex · <a href="#" id="bs-logs" target="_blank" rel="noopener" style="color:var(--accent)">📊 logi 24h</a></span>
   <span id="bs-cost">…</span>
   <span class="mono">updated: <span id="bs-updated">…</span></span>
 </div>
@@ -353,6 +353,48 @@ const TYPE = {
   layer:  { icon: '📚', label: 'Warstwa',    color: '#21262d' },
 };
 const t = (type) => TYPE[type] || { icon: '•', label: type, color: '#888' };
+
+// === BQ LOGS LINK ===
+// Mapowanie node ID → wartość kolumny `app` w pipeline_logs (gdzie się różni od domyślnego)
+const BQ_APP_OVERRIDE = {
+  'cr_atlas_status': 'atlas-status',
+  'cr_health_check': 'health-check',
+  'cr_notion_backup': 'notion-backup',
+  'cr_supabase_backup': 'supabase-backup',
+  'cr_cloudflare_backup': 'cloudflare-backup',
+  'cr_workspace_audit': 'workspace-audit',
+  'cr_indexing': 'indexing-daily',
+  'cr_zakupex_import': 'zakupex-import',
+  'cr_janusz_content': 'janusz-content',
+  'cr_janusz_weekly': 'janusz-weekly',
+  'cr_content': 'content-pipeline',
+};
+const BQ_LOGGING_NODES = new Set([
+  'app_pm', 'app_zakupex', 'app_janusz', 'app_gustaw',
+  'www_atlas',
+  'cr_recenzent', 'cr_health_check', 'cr_notion_backup', 'cr_supabase_backup',
+  'cr_cloudflare_backup', 'cr_workspace_audit', 'cr_indexing', 'cr_zakupex_import',
+  'cr_janusz_content', 'cr_janusz_weekly', 'cr_atlas_status', 'cr_content',
+]);
+function bqAppName(nodeId) {
+  if (BQ_APP_OVERRIDE[nodeId]) return BQ_APP_OVERRIDE[nodeId];
+  const m = nodeId.match(/^(app_|www_|cr_)(.+)$/);
+  return m ? m[2].replace(/_/g, '-') : null;
+}
+function bqLogsUrl(nodeId) {
+  // Otwiera BigQuery Console z prefilled query
+  const project = 'ai-council-487609';
+  const app = nodeId ? bqAppName(nodeId) : null;
+  const where = app
+    ? `WHERE app = '${app}' AND created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)`
+    : `WHERE created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)`;
+  const query = `SELECT created_at, app, level, source, event, message, run_id
+FROM \`${project}.cortex_logs.pipeline_logs\`
+${where}
+ORDER BY created_at DESC
+LIMIT 200`;
+  return `https://console.cloud.google.com/bigquery?project=${project}&sq=${project}:${encodeURIComponent(query)}`;
+}
 
 // === HELPERS ===
 function el(tag, attrs = {}, ...kids) {
@@ -676,6 +718,22 @@ function openSidebar(nodeId) {
   body.appendChild(el('span', { class: 'sb-type' }, t(node.type).label));
   body.appendChild(el('div', { class: 'sb-desc' }, node.desc || '(brak opisu)'));
 
+  // Logi w BQ (jeśli node loguje do pipeline_logs)
+  if (BQ_LOGGING_NODES.has(nodeId)) {
+    const section = el('div', { class: 'sb-section' });
+    section.appendChild(el('div', { class: 'sb-section-title' }, 'Logi'));
+    const a = document.createElement('a');
+    a.href = bqLogsUrl(nodeId);
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.className = 'sb-item';
+    a.style.color = 'var(--accent)';
+    a.style.textDecoration = 'none';
+    a.innerHTML = '📊 <span>Logi 24h w BigQuery →</span><span class="sb-meta">app=' + bqAppName(nodeId) + '</span>';
+    section.appendChild(a);
+    body.appendChild(section);
+  }
+
   // Live status dla aplikacji/WWW
   const endpoint = NODE_TO_LIVE[nodeId];
   if (liveStatus && endpoint && liveStatus[endpoint]) {
@@ -798,6 +856,7 @@ document.getElementById('bs-updated').textContent = '…';
 })();
 const knownCost = '~653 zł/mc';
 document.getElementById('bs-cost').innerHTML = '💰 koszt znany: <strong>' + knownCost + '</strong>';
+document.getElementById('bs-logs').href = bqLogsUrl(null);
 
 // === INIT ===
 renderApps();
